@@ -1,0 +1,391 @@
+version: '3.8'
+
+services:
+  # База данных PostgreSQL
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ai_engineering
+      POSTGRES_USER: ai_user
+      POSTGRES_PASSWORD: ai_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - ai-network
+
+  # Redis для кэширования и сессий
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ai-network
+
+  # Vector Database (Qdrant)
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - ai-network
+
+  # MinIO для хранения файлов
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - ai-network
+
+  # RabbitMQ для очередей сообщений
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: rabbitmq123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ai-network
+
+  # vLLM для высокопроизводительного обслуживания LLM (временно отключен)
+  # vllm:
+  #   image: vllm/vllm-openai:latest
+  #   ports:
+  #     - "8002:8000"
+  #   environment:
+  #     - MODEL_NAME=llama3.1:8b
+  #     - HOST=0.0.0.0
+  #     - PORT=8000
+  #     - OLLAMA_BASE_URL=http://host.docker.internal:11434
+  #   networks:
+  #     - ai-network
+
+  # Ollama Management Service
+  ollama-service:
+    build:
+      context: ./services/ollama-service
+      dockerfile: Dockerfile
+    ports:
+      - "8012:8012"
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - DEFAULT_MODEL=llama3.1:8b
+    networks:
+      - ai-network
+
+  # Keycloak для SSO (отключено для разработки)
+  # keycloak:
+  #   image: quay.io/keycloak/keycloak:latest
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     KEYCLOAK_ADMIN: admin
+  #     KEYCLOAK_ADMIN_PASSWORD: admin123
+  #     KC_DB: postgres
+  #     KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+  #     KC_DB_USERNAME: ai_user
+  #     KC_DB_PASSWORD: ai_password
+  #   volumes:
+  #     - keycloak_data:/opt/keycloak/data
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - ai-network
+  #   command: start-dev
+
+  # RAG Service
+  rag-service:
+    build:
+      context: ./services/rag-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - QDRANT_URL=http://qdrant:6333
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - minio
+      # - vllm
+      - ollama-service
+    volumes:
+      - ./services/rag-service:/app
+    networks:
+      - ai-network
+
+
+  # Chat Service
+  chat-service:
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - RAG_SERVICE_URL=http://rag-service:8001
+    depends_on:
+      - postgres
+      - redis
+      - rag-service
+      # - vllm
+      - ollama-service
+    volumes:
+      - ./services/chat-service:/app
+    networks:
+      - ai-network
+
+  # Consultation Service
+  consultation-service:
+    build:
+      context: ./services/consultation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - RAG_SERVICE_URL=http://rag-service:8001
+    depends_on:
+      - postgres
+      - redis
+      - rag-service
+      # - vllm
+      - ollama-service
+    volumes:
+      - ./services/consultation-service:/app
+    networks:
+      - ai-network
+
+  # Archive Service
+  archive-service:
+    build:
+      context: ./services/archive-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    volumes:
+      - ./services/archive-service:/app
+    networks:
+      - ai-network
+
+  # Calculation Service
+  calculation-service:
+    build:
+      context: ./services/calculation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8006:8006"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/calculation-service:/app
+    networks:
+      - ai-network
+
+  # Validation Service
+  validation-service:
+    build:
+      context: ./services/validation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8007:8007"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - RAG_SERVICE_URL=http://rag-service:8001
+    depends_on:
+      - postgres
+      - redis
+      - rag-service
+      # - vllm
+      - ollama-service
+    volumes:
+      - ./services/validation-service:/app
+    networks:
+      - ai-network
+
+  # Document Service
+  document-service:
+    build:
+      context: ./services/document-service
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8008"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    volumes:
+      - ./services/document-service:/app
+    networks:
+      - ai-network
+
+  # Analytics Service
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    ports:
+      - "8009:8009"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - RAG_SERVICE_URL=http://rag-service:8001
+    depends_on:
+      - postgres
+      - redis
+      - rag-service
+      # - vllm
+      - ollama-service
+    volumes:
+      - ./services/analytics-service:/app
+    networks:
+      - ai-network
+
+  # Integration Service
+  integration-service:
+    build:
+      context: ./services/integration-service
+      dockerfile: Dockerfile
+    ports:
+      - "8010:8010"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/integration-service:/app
+    networks:
+      - ai-network
+
+  # Outgoing Control Service
+  outgoing-control-service:
+    build:
+      context: ./services/outgoing-control-service
+      dockerfile: Dockerfile
+    ports:
+      - "8011:8011"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - OLLAMA_URL=http://host.docker.internal:11434
+      # - VLLM_URL=http://vllm:8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+    depends_on:
+      - postgres
+      - redis
+      # - vllm
+      - ollama-service
+    volumes:
+      - ./services/outgoing-control-service:/app
+    networks:
+      - ai-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+      - REACT_APP_KEYCLOAK_URL=http://localhost:8080
+      - REACT_APP_KEYCLOAK_REALM=ai-engineering
+      - REACT_APP_KEYCLOAK_CLIENT_ID=ai-frontend
+    # depends_on:
+    #   - keycloak
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - ai-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - rag-service
+      - chat-service
+      - consultation-service
+      - archive-service
+      - calculation-service
+      - validation-service
+      - document-service
+      - analytics-service
+      - integration-service
+      - outgoing-control-service
+    networks:
+      - ai-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  minio_data:
+  rabbitmq_data:
+  keycloak_data:
+
+networks:
+  ai-network:
+    driver: bridge

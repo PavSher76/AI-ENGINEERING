@@ -1,0 +1,49 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-content {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 64px);
+}
+
+.main-content.sidebar-open {
+  margin-left: 280px;
+}
+
+.content-wrapper {
+  padding: 1.5rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .main-content.sidebar-open {
+    margin-left: 0;
+  }
+  
+  .content-wrapper {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .main-content {
+    margin-left: 280px;
+  }
+  
+  .main-content.sidebar-open {
+    margin-left: 280px;
+  }
+}
