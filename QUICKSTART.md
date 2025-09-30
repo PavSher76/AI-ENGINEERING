@@ -133,7 +133,7 @@ docker-compose up -d
 - **Архитектура**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Развертывание**: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 - **API документация**: http://localhost:8001/docs (RAG Service)
-- **API документация**: http://localhost:8002/docs (AI-NK Service)
+- **API документация**: http://localhost:8012/docs (Ollama Management Service)
 
 ## 🎯 Что дальше?
 

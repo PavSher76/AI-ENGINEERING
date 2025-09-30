@@ -105,7 +105,7 @@ export class AINkService {
     collectionId?: string;
     projectId?: string;
   }) {
-    const response = await api.post('/ai-nk/chat', request);
+    const response = await api.post('/ollama-service/chat', request);
     return response.data;
   }
 
@@ -116,7 +116,7 @@ export class AINkService {
     model?: string;
     projectId?: string;
   }) {
-    const response = await api.post('/ai-nk/calculate', request);
+    const response = await api.post('/ollama-service/calculate', request);
     return response.data;
   }
 
@@ -127,7 +127,7 @@ export class AINkService {
     standards?: string[];
     model?: string;
   }) {
-    const response = await api.post('/ai-nk/analyze', request);
+    const response = await api.post('/ollama-service/analyze', request);
     return response.data;
   }
 
@@ -139,12 +139,12 @@ export class AINkService {
     includeDocuments?: boolean;
     model?: string;
   }) {
-    const response = await api.post('/ai-nk/generate-report', request);
+    const response = await api.post('/ollama-service/generate-report', request);
     return response.data;
   }
 
   static async getAvailableModels() {
-    const response = await api.get('/ai-nk/models');
+    const response = await api.get('/ollama-service/models');
     return response.data;
   }
 }

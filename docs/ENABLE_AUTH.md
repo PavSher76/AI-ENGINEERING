@@ -21,7 +21,7 @@ user_id = current_user.id if current_user else "system"
 user_id = current_user.id
 ```
 
-#### AI-NK Service (`services/ai-nk/main.py`)
+#### Ollama Management Service (`services/ollama-service/main.py`)
 ```python
 # Заменить все вхождения:
 current_user = Depends(get_current_user_optional)

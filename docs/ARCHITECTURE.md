@@ -15,15 +15,15 @@ AI Engineering Platform - это комплексная система для и
 
 #### RAG Service (8001)
 - **Назначение**: Работа с векторными базами данных и поиск по документам
-- **Технологии**: FastAPI, ChromaDB, Sentence Transformers
+- **Технологии**: FastAPI, Qdrant, Sentence Transformers
 - **Функции**:
   - Создание и управление коллекциями документов
   - Загрузка и обработка документов
   - Семантический поиск по документам
   - Создание эмбеддингов
 
-#### AI-NK Service (8002)
-- **Назначение**: Основной ИИ модуль для инженерных задач
+#### Ollama Management Service (8012)
+- **Назначение**: Управление моделями Ollama и ИИ взаимодействие
 - **Технологии**: FastAPI, Ollama, LangChain
 - **Функции**:
   - Чат с ИИ с использованием RAG
@@ -74,7 +74,7 @@ AI Engineering Platform - это комплексная система для и
 - **Назначение**: Кэширование и управление сессиями
 - **Функции**: Кэш, очереди задач, контекст
 
-#### ChromaDB (8000)
+#### Qdrant (6333)
 - **Назначение**: Векторная база данных
 - **Функции**: Хранение эмбеддингов документов
 
@@ -102,23 +102,23 @@ AI Engineering Platform - это комплексная система для и
 3. RAG Service сохраняет файл в MinIO
 4. RAG Service извлекает текст из документа
 5. RAG Service создает эмбеддинги через Sentence Transformers
-6. Эмбеддинги сохраняются в ChromaDB
+6. Эмбеддинги сохраняются в Qdrant
 7. Метаданные документа сохраняются в PostgreSQL
 
 ### 2. Чат с ИИ
 1. Пользователь отправляет сообщение через Frontend
-2. Frontend отправляет запрос в AI-NK Service
-3. AI-NK Service получает контекст из Context Service
-4. AI-NK Service выполняет поиск релевантных документов через RAG Service
-5. AI-NK Service формирует промпт с контекстом и документами
-6. AI-NK Service отправляет запрос в Ollama
+2. Frontend отправляет запрос в Ollama Management Service
+3. Ollama Management Service получает контекст из Context Service
+4. Ollama Management Service выполняет поиск релевантных документов через RAG Service
+5. Ollama Management Service формирует промпт с контекстом и документами
+6. Ollama Management Service отправляет запрос в Ollama
 7. Ollama генерирует ответ
-8. AI-NK Service сохраняет контекст и возвращает ответ
+8. Ollama Management Service сохраняет контекст и возвращает ответ
 
 ### 3. Инженерный расчет
 1. Пользователь вводит параметры расчета
-2. Frontend отправляет запрос в AI-NK Service
-3. AI-NK Service определяет тип расчета
+2. Frontend отправляет запрос в Ollama Management Service
+3. Ollama Management Service определяет тип расчета
 4. Для стандартных расчетов используется Calculation Service
 5. Для сложных расчетов используется Ollama
 6. Результат сохраняется в PostgreSQL

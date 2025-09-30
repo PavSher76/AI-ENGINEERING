@@ -199,7 +199,7 @@ docker-compose ps
 ```bash
 # Проверка здоровья сервисов
 curl http://localhost:8001/health  # RAG Service
-curl http://localhost:8002/health  # AI-NK Service
+curl http://localhost:8012/health  # Ollama Management Service
 curl http://localhost:3000         # Frontend
 ```
 
@@ -219,8 +219,8 @@ docker-compose exec -T postgres psql -U ai_user ai_engineering < backup.sql
 # Копирование данных MinIO
 docker cp $(docker-compose ps -q minio):/data ./minio-backup
 
-# Копирование данных ChromaDB
-docker cp $(docker-compose ps -q chroma):/chroma/chroma ./chroma-backup
+# Копирование данных Qdrant
+docker cp $(docker-compose ps -q qdrant):/qdrant/storage ./qdrant-backup
 ```
 
 ### 3. Backup конфигурации
@@ -275,7 +275,7 @@ docker-compose restart
 docker network ls
 
 # Проверка подключения между контейнерами
-docker-compose exec rag-service ping ai-nk
+docker-compose exec rag-service ping ollama-service
 ```
 
 ### 3. Проблемы с базой данных
@@ -351,7 +351,7 @@ docker-compose -f docker-compose.monitoring.yml up -d
 ```bash
 # Масштабирование сервисов
 docker-compose up -d --scale rag-service=3
-docker-compose up -d --scale ai-nk=2
+docker-compose up -d --scale ollama-service=2
 ```
 
 ### 2. Настройка Load Balancer

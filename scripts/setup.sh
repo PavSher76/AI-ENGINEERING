@@ -65,7 +65,7 @@ fi
 
 # Создание директорий для данных
 echo "📁 Создание директорий для данных..."
-mkdir -p data/{postgres,redis,chroma,minio,rabbitmq,keycloak}
+mkdir -p data/{postgres,redis,qdrant,minio,rabbitmq,keycloak}
 
 # Запуск сервисов
 echo "🐳 Запуск Docker контейнеров..."
@@ -93,11 +93,11 @@ echo "  📊 MinIO Console: http://localhost:9001 (minioadmin/minioadmin123)"
 echo "  🐰 RabbitMQ Management: http://localhost:15672 (rabbitmq/rabbitmq123)"
 echo "  🗄️  PostgreSQL: localhost:5432"
 echo "  🔴 Redis: localhost:6379"
-echo "  🧠 ChromaDB: http://localhost:8000"
+echo "  🧠 Qdrant: http://localhost:6333"
 echo ""
 echo "🔧 API Endpoints:"
 echo "  📚 RAG Service: http://localhost:8001"
-echo "  🤖 AI-NK Service: http://localhost:8002"
+echo "  🤖 Ollama Management Service: http://localhost:8012"
 echo "  💬 Chat Service: http://localhost:8003"
 echo "  📖 Consultation Service: http://localhost:8004"
 echo "  📁 Archive Service: http://localhost:8005"
