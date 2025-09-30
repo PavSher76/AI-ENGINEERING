@@ -71,6 +71,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentPath }) => {
       description: 'Проверка исходящих документов'
     },
     {
+      path: '/qr-validation',
+      icon: '📱',
+      title: 'QR валидация РД',
+      description: 'Генерация и валидация QR-кодов'
+    },
+    {
       path: '/settings',
       icon: '⚙️',
       title: 'Настройки',

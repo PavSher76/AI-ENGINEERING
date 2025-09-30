@@ -11,6 +11,7 @@ import Documents from './pages/Documents/Documents';
 import Analytics from './pages/Analytics/Analytics';
 import Integration from './pages/Integration/Integration';
 import OutgoingControl from './pages/OutgoingControl/OutgoingControl';
+import QRValidation from './pages/QRValidation/QRValidation';
 import Settings from './pages/Settings/Settings';
 import './App.css';
 
@@ -30,6 +31,7 @@ function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/integration" element={<Integration />} />
             <Route path="/outgoing-control" element={<OutgoingControl />} />
+            <Route path="/qr-validation" element={<QRValidation />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </Layout>

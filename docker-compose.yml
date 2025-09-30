@@ -95,6 +95,25 @@ services:
     networks:
       - ai-network
 
+  # QR валидация РД
+  qr-validation-service:
+    build:
+      context: ./services/qr-validation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8013:8013"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - QR_SECRET_KEY=qr_validation_secret_key_2025
+    volumes:
+      - qr_codes_data:/app/qr_codes
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ai-network
+
   # Keycloak для SSO (отключено для разработки)
   # keycloak:
   #   image: quay.io/keycloak/keycloak:latest
@@ -375,6 +394,7 @@ services:
       - analytics-service
       - integration-service
       - outgoing-control-service
+      - qr-validation-service
     networks:
       - ai-network
 
@@ -385,6 +405,7 @@ volumes:
   minio_data:
   rabbitmq_data:
   keycloak_data:
+  qr_codes_data:
 
 networks:
   ai-network:
