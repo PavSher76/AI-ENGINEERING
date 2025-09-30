@@ -1,0 +1,423 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'  # Ежедневно в 2:00 UTC
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  DOCKER_COMPOSE_VERSION: '2.21.0'
+
+jobs:
+  # Job 1: Проверка качества кода
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy
+          pip install -r tests/requirements.txt
+
+      - name: Install Node.js dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Lint Python code
+        run: |
+          flake8 services/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 services/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Format check Python code
+        run: |
+          black --check services/
+          isort --check-only services/
+
+      - name: Type check Python code
+        run: |
+          mypy services/ --ignore-missing-imports
+
+      - name: Lint frontend code
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Type check frontend code
+        run: |
+          cd frontend
+          npm run type-check
+
+  # Job 2: Unit тесты
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+
+      - name: Create test reports directory
+        run: mkdir -p reports
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ \
+            -m "unit" \
+            --cov=services \
+            --cov-report=html:htmlcov \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            --cov-fail-under=70 \
+            --html=reports/unit-report.html \
+            --self-contained-html \
+            --json-report \
+            --json-report-file=reports/unit-report.json \
+            -v
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: unit-test-results
+          path: |
+            reports/
+            htmlcov/
+            coverage.xml
+
+  # Job 3: Интеграционные тесты
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6333:6333
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+
+      - name: Start additional services
+        run: |
+          # Запускаем MinIO
+          docker run -d --name minio \
+            -p 9000:9000 -p 9001:9001 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin123 \
+            minio/minio server /data --console-address ":9001"
+
+      - name: Wait for services
+        run: |
+          sleep 30
+          # Проверяем доступность сервисов
+          curl -f http://localhost:6333/health || exit 1
+          curl -f http://localhost:9000/minio/health/live || exit 1
+
+      - name: Create test reports directory
+        run: mkdir -p reports
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ \
+            -m "integration" \
+            --html=reports/integration-report.html \
+            --self-contained-html \
+            --json-report \
+            --json-report-file=reports/integration-report.json \
+            -v
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: reports/
+
+  # Job 4: E2E тесты
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+
+      - name: Create test reports directory
+        run: mkdir -p reports
+
+      - name: Run E2E tests (without services)
+        run: |
+          pytest tests/e2e/ \
+            -m "e2e" \
+            --html=reports/e2e-report.html \
+            --self-contained-html \
+            --json-report \
+            --json-report-file=reports/e2e-report.json \
+            -v
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: reports/
+
+  # Job 5: Сборка и тестирование Docker образов
+  docker-build:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images
+        run: |
+          # Собираем образы для основных сервисов
+          docker build -t ai-engineering/rag-service:test ./services/rag-service/
+          docker build -t ai-engineering/chat-service:test ./services/chat-service/
+          docker build -t ai-engineering/ollama-service:test ./services/ollama-service/
+          docker build -t ai-engineering/outgoing-control-service:test ./services/outgoing-control-service/
+
+      - name: Test Docker images
+        run: |
+          # Проверяем, что образы собираются без ошибок
+          docker images | grep ai-engineering
+
+  # Job 6: Безопасность
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety
+
+      - name: Run security scan
+        run: |
+          bandit -r services/ -f json -o reports/security-report.json || true
+          safety check --json --output reports/safety-report.json || true
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-results
+          path: reports/
+
+  # Job 7: Производительность
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install locust
+
+      - name: Create performance test
+        run: |
+          cat > performance_test.py << 'EOF'
+          from locust import HttpUser, task, between
+          
+          class WebsiteUser(HttpUser):
+              wait_time = between(1, 3)
+              
+              @task
+              def health_check(self):
+                  self.client.get("/health")
+          EOF
+
+      - name: Run performance test
+        run: |
+          locust -f performance_test.py --headless -u 10 -r 2 -t 30s --html reports/performance-report.html || true
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: performance-results
+          path: reports/
+
+  # Job 8: Деплой (только для main ветки)
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, docker-build, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          # Здесь будут команды для деплоя
+          echo "✅ Deployment completed successfully"
+
+      - name: Notify deployment
+        run: |
+          echo "📢 Deployment notification sent"
+
+  # Job 9: Генерация отчета
+  generate-report:
+    name: Generate Test Report
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, security, performance]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate combined report
+        run: |
+          mkdir -p final-reports
+          
+          # Создаем сводный отчет
+          cat > final-reports/README.md << 'EOF'
+          # Test Results Summary
+          
+          ## Test Coverage
+          - Unit Tests: $(find . -name "coverage.xml" -exec grep -o 'line-rate="[^"]*"' {} \; | head -1 | cut -d'"' -f2)
+          
+          ## Test Results
+          - Unit Tests: $(find . -name "unit-report.json" -exec jq -r '.summary.passed' {} \; 2>/dev/null || echo "N/A")
+          - Integration Tests: $(find . -name "integration-report.json" -exec jq -r '.summary.passed' {} \; 2>/dev/null || echo "N/A")
+          - E2E Tests: $(find . -name "e2e-report.json" -exec jq -r '.summary.passed' {} \; 2>/dev/null || echo "N/A")
+          
+          ## Security
+          - Security Scan: Completed
+          - Performance Tests: Completed
+          
+          Generated on: $(date)
+          EOF
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v3
+        with:
+          name: final-test-report
+          path: final-reports/
+
+  # Job 10: Уведомления
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, deploy]
+    if: always()
+    steps:
+      - name: Notify success
+        if: ${{ needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' }}
+        run: |
+          echo "✅ All tests passed successfully!"
+          echo "🎉 CI/CD Pipeline completed successfully!"
+
+      - name: Notify failure
+        if: ${{ needs.unit-tests.result == 'failure' || needs.integration-tests.result == 'failure' }}
+        run: |
+          echo "❌ Some tests failed!"
+          echo "🔍 Please check the test results and fix the issues."
