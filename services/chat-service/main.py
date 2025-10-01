@@ -184,12 +184,12 @@ async def health():
 # === УПРАВЛЕНИЕ НАСТРОЙКАМИ ===
 
 @app.get("/settings")
-async def get_all_settings(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
+async def get_all_settings():
     """Получить все настройки"""
     return settings_service.get_all_settings()
 
 @app.get("/settings/llm")
-async def get_llm_settings(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
+async def get_llm_settings():
     """Получить настройки LLM"""
     return settings_service.get_llm_settings()
 
@@ -204,7 +204,7 @@ async def update_llm_settings(
     return settings_service.update_llm_settings(settings)
 
 @app.get("/settings/chat")
-async def get_chat_settings(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
+async def get_chat_settings():
     """Получить настройки чата"""
     return settings_service.get_chat_settings()
 
@@ -243,7 +243,7 @@ async def reset_settings(current_user: Dict[str, Any] = Depends(get_current_user
     return settings_service.reset_to_defaults()
 
 @app.get("/settings/available")
-async def get_available_options(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
+async def get_available_options():
     """Получить доступные опции для настроек"""
     models = await settings_service.get_available_models()
     return {
@@ -471,8 +471,7 @@ async def get_analysis_session(session_id: str):
 async def chat_with_ai(
     message: str = Form(...),
     session_id: str = Form(default="default"),
-    files: List[UploadFile] = File(default=[]),
-    current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)
+    files: List[UploadFile] = File(default=[])
 ):
     """Отправить сообщение в чат с ИИ"""
     logger.info(f"💬 Новое сообщение в чат. Сессия: {session_id}, Файлов: {len(files)}")
@@ -554,8 +553,7 @@ async def chat_with_ai(
 async def chat_with_ai_streaming(
     message: str = Form(...),
     session_id: str = Form(default="default"),
-    files: List[UploadFile] = File(default=[]),
-    current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)
+    files: List[UploadFile] = File(default=[])
 ):
     """Отправить сообщение в чат с ИИ (потоковый ответ)"""
     logger.info(f"🌊 Потоковый чат. Сессия: {session_id}, Файлов: {len(files)}")
