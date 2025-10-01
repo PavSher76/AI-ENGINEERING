@@ -3,22 +3,38 @@ Ollama Management Service
 Сервис для управления моделями Ollama
 """
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import os
+import sys
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import logging
+import traceback
+from datetime import datetime
+from contextlib import asynccontextmanager
+
+# Импорт утилит логирования
+from logging_utils import setup_service_logging, log_request, log_error, log_performance, log_business_event
 
 # Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = setup_service_logging("ollama-service")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("🚀 Ollama Management Service запускается...")
+    logger.info(f"🔗 Подключение к Ollama: {OLLAMA_BASE_URL}")
+    yield
+    # Shutdown
+    logger.info("🛑 Ollama Management Service останавливается...")
 
 app = FastAPI(
     title="Ollama Management Service",
     description="Сервис для управления моделями Ollama",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -29,6 +45,44 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware для логирования запросов
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    start_time = datetime.now()
+    request_id = f"ollama_req_{start_time.strftime('%Y%m%d_%H%M%S_%f')}"
+    
+    logger.info(f"📥 Входящий запрос: {request.method} {request.url.path}", extra={
+        "request_id": request_id,
+        "method": request.method,
+        "path": request.url.path,
+        "query_params": str(request.query_params)
+    })
+    
+    try:
+        response = await call_next(request)
+        process_time = (datetime.now() - start_time).total_seconds()
+        
+        log_request(
+            logger=logger,
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration=process_time,
+            request_id=request_id
+        )
+        
+        return response
+        
+    except Exception as e:
+        process_time = (datetime.now() - start_time).total_seconds()
+        log_error(
+            logger=logger,
+            error=e,
+            context=f"HTTP {request.method} {request.url.path}",
+            request_id=request_id
+        )
+        raise
 
 # Конфигурация
 OLLAMA_BASE_URL = os.getenv("OLLAMA_URL", "http://host.docker.internal:11434")
@@ -60,11 +114,15 @@ class SettingsResponse(BaseModel):
 @app.get("/health")
 async def health_check():
     """Проверка здоровья сервиса"""
+    logger.info("🏥 Health check запрос")
     return {"status": "healthy", "service": "ollama-management-service"}
 
 @app.get("/models", response_model=List[ModelInfo])
 async def get_models():
     """Получение списка доступных моделей"""
+    start_time = datetime.now()
+    logger.info("📋 Получение списка моделей Ollama")
+    
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
@@ -80,12 +138,51 @@ async def get_models():
                     modified_at=model["modified_at"]
                 ))
             
+            duration = (datetime.now() - start_time).total_seconds()
+            log_performance(
+                logger=logger,
+                operation="get_models",
+                duration=duration,
+                success=True,
+                models_count=len(models)
+            )
+            
+            log_business_event(
+                logger=logger,
+                event="models_listed",
+                models_count=len(models)
+            )
+            
+            logger.info(f"✅ Получено {len(models)} моделей")
             return models
+            
     except httpx.RequestError as e:
-        logger.error(f"Ошибка подключения к Ollama: {e}")
+        duration = (datetime.now() - start_time).total_seconds()
+        log_performance(
+            logger=logger,
+            operation="get_models",
+            duration=duration,
+            success=False
+        )
+        log_error(
+            logger=logger,
+            error=e,
+            context="get_models - подключение к Ollama"
+        )
         raise HTTPException(status_code=503, detail="Ollama недоступен")
     except Exception as e:
-        logger.error(f"Ошибка получения моделей: {e}")
+        duration = (datetime.now() - start_time).total_seconds()
+        log_performance(
+            logger=logger,
+            operation="get_models",
+            duration=duration,
+            success=False
+        )
+        log_error(
+            logger=logger,
+            error=e,
+            context="get_models"
+        )
         raise HTTPException(status_code=500, detail="Ошибка получения моделей")
 
 @app.post("/models/pull", response_model=ModelResponse)

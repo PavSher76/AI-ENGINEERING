@@ -64,7 +64,7 @@ class QRDocument(Base):
     qr_signature = Column(String, nullable=True)
     
     # Дополнительные метаданные
-    metadata = Column(JSON, nullable=True, default=dict)
+    document_metadata = Column(JSON, nullable=True, default=dict)
     
     # Временные метки
     created_at = Column(DateTime, default=func.now(), nullable=False)

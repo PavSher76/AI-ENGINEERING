@@ -1,0 +1,678 @@
+openapi: 3.0.3
+info:
+  title: TechExpert Connector API
+  description: |
+    Сервис для интеграции с API "Техэксперт" для работы с нормативно-техническими документами.
+    Обеспечивает online-first подход с fallback на локальный индекс.
+  version: 1.0.0
+  contact:
+    name: AI Engineering Team
+    email: support@ai-engineering.ru
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8014
+    description: Development server
+  - url: https://api.ai-engineering.ru/techexpert-connector
+    description: Production server
+
+security:
+  - ApiKeyAuth: []
+  - OAuth2: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Проверка состояния сервиса и подключения к Техэксперт
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Сервис работает
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/token:
+    post:
+      summary: Получение токена авторизации
+      description: Аутентификация в системе Техэксперт
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Токен получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/search:
+    post:
+      summary: Поиск документов
+      description: Поиск документов по текстовому запросу с фильтрами
+      tags:
+        - Documents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Результаты поиска
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Превышен лимит запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{doc_id}/meta:
+    get:
+      summary: Метаданные документа
+      description: Получение метаданных документа по ID
+      tags:
+        - Documents
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор документа
+        - name: edition_id
+          in: query
+          schema:
+            type: string
+          description: ID конкретной редакции (опционально)
+      responses:
+        '200':
+          description: Метаданные документа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentMeta'
+        '404':
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{doc_id}/latest:
+    get:
+      summary: Последняя редакция документа
+      description: Получение информации о последней редакции документа
+      tags:
+        - Documents
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор документа
+      responses:
+        '200':
+          description: Информация о последней редакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LatestEdition'
+        '404':
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{doc_id}/sections:
+    get:
+      summary: Разделы документа
+      description: Получение списка разделов документа
+      tags:
+        - Documents
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор документа
+        - name: edition_id
+          in: query
+          schema:
+            type: string
+          description: ID конкретной редакции
+      responses:
+        '200':
+          description: Список разделов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionsResponse'
+        '404':
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{doc_id}/sections/{section_id}:
+    get:
+      summary: Содержимое раздела
+      description: Получение содержимого конкретного раздела
+      tags:
+        - Documents
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор документа
+        - name: section_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор раздела
+        - name: edition_id
+          in: query
+          schema:
+            type: string
+          description: ID конкретной редакции
+        - name: include_metadata
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Включать метаданные
+      responses:
+        '200':
+          description: Содержимое раздела
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionContent'
+        '404':
+          description: Раздел не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{doc_id}/citations:
+    get:
+      summary: Ссылки на документ
+      description: Получение списка документов, ссылающихся на данный
+      tags:
+        - Documents
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор документа
+        - name: edition_id
+          in: query
+          schema:
+            type: string
+          description: ID конкретной редакции
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+          description: Максимальное количество ссылок
+      responses:
+        '200':
+          description: Список ссылок
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitationsResponse'
+        '404':
+          description: Документ не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sync/status:
+    get:
+      summary: Статус синхронизации
+      description: Получение статуса синхронизации с Техэксперт
+      tags:
+        - Synchronization
+      responses:
+        '200':
+          description: Статус синхронизации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatus'
+
+  /sync/trigger:
+    post:
+      summary: Запуск синхронизации
+      description: Принудительный запуск синхронизации документов
+      tags:
+        - Synchronization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncRequest'
+      responses:
+        '202':
+          description: Синхронизация запущена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResponse'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /auth/token
+          scopes:
+            read: Чтение документов
+            write: Запись и обновление
+            admin: Административные операции
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            techexpert_api:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [up, down, degraded]
+                response_time_ms:
+                  type: number
+            local_index:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [up, down, degraded]
+                documents_count:
+                  type: integer
+        version:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        request_id:
+          type: string
+
+    AuthRequest:
+      type: object
+      required:
+        - client_id
+        - client_secret
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+        scope:
+          type: string
+          default: "read"
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          default: "Bearer"
+        expires_in:
+          type: integer
+        scope:
+          type: string
+
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Поисковый запрос
+        filters:
+          type: object
+          properties:
+            doc_family:
+              type: array
+              items:
+                type: string
+            discipline:
+              type: array
+              items:
+                type: string
+            edition_year_from:
+              type: integer
+            edition_year_to:
+              type: integer
+            is_current:
+              type: boolean
+            status:
+              type: array
+              items:
+                type: string
+        limit:
+          type: integer
+          default: 20
+          maximum: 100
+        offset:
+          type: integer
+          default: 0
+        sort_by:
+          type: string
+          enum: [relevance, date, title]
+          default: relevance
+        include_metadata:
+          type: boolean
+          default: true
+
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentResult'
+        total_count:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        query_time_ms:
+          type: number
+        source:
+          type: string
+          enum: [online, local, hybrid]
+
+    DocumentResult:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        doc_title:
+          type: string
+        doc_family:
+          type: string
+        edition_year:
+          type: integer
+        is_current:
+          type: boolean
+        relevance_score:
+          type: number
+        snippet:
+          type: string
+        matched_sections:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+          enum: [techexpert, local]
+
+    DocumentMeta:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        doc_title:
+          type: string
+        doc_family:
+          type: string
+        discipline:
+          type: array
+          items:
+            type: string
+        edition_year:
+          type: integer
+        is_current:
+          type: boolean
+        effective_from:
+          type: string
+          format: date
+        canceled_by:
+          type: string
+        status:
+          type: string
+        techexpert_doc_id:
+          type: string
+        techexpert_edition_id:
+          type: string
+        last_updated:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [techexpert, local]
+
+    LatestEdition:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        current_edition:
+          type: object
+          properties:
+            edition_id:
+              type: string
+            edition_year:
+              type: integer
+            effective_from:
+              type: string
+              format: date
+            is_current:
+              type: boolean
+        local_edition:
+          type: object
+          properties:
+            edition_year:
+              type: integer
+            last_sync:
+              type: string
+              format: date-time
+        needs_update:
+          type: boolean
+        source:
+          type: string
+          enum: [techexpert, local]
+
+    SectionsResponse:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionInfo'
+        total_sections:
+          type: integer
+
+    SectionInfo:
+      type: object
+      properties:
+        section_id:
+          type: string
+        section_title:
+          type: string
+        page_from:
+          type: integer
+        page_to:
+          type: integer
+        subsections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionInfo'
+
+    SectionContent:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        section_id:
+          type: string
+        section_title:
+          type: string
+        content:
+          type: string
+        page_from:
+          type: integer
+        page_to:
+          type: integer
+        metadata:
+          type: object
+        source:
+          type: string
+          enum: [techexpert, local]
+
+    CitationsResponse:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        total_count:
+          type: integer
+
+    Citation:
+      type: object
+      properties:
+        citing_doc_id:
+          type: string
+        citing_doc_title:
+          type: string
+        citation_context:
+          type: string
+        citation_type:
+          type: string
+          enum: [reference, requirement, definition]
+
+    SyncStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [idle, running, error]
+        last_sync:
+          type: string
+          format: date-time
+        next_sync:
+          type: string
+          format: date-time
+        documents_processed:
+          type: integer
+        documents_updated:
+          type: integer
+        errors_count:
+          type: integer
+        sync_duration_ms:
+          type: number
+
+    SyncRequest:
+      type: object
+      properties:
+        force_full_sync:
+          type: boolean
+          default: false
+        doc_families:
+          type: array
+          items:
+            type: string
+        max_documents:
+          type: integer
+          default: 1000
+
+    SyncResponse:
+      type: object
+      properties:
+        sync_id:
+          type: string
+        status:
+          type: string
+          enum: [started, queued]
+        estimated_duration_minutes:
+          type: integer

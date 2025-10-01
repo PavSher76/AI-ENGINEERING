@@ -1,18 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout/Layout';
-import Dashboard from './pages/Dashboard/Dashboard';
-import Chat from './pages/Chat/Chat';
-import Consultation from './pages/Consultation/Consultation';
-import Archive from './pages/Archive/Archive';
-import Calculations from './pages/Calculations/Calculations';
-import Validation from './pages/Validation/Validation';
-import Documents from './pages/Documents/Documents';
-import Analytics from './pages/Analytics/Analytics';
-import Integration from './pages/Integration/Integration';
-import OutgoingControl from './pages/OutgoingControl/OutgoingControl';
-import QRValidation from './pages/QRValidation/QRValidation';
-import Settings from './pages/Settings/Settings';
+import Layout from './components/Layout/Layout.tsx';
+import Dashboard from './pages/Dashboard/Dashboard.tsx';
+import Chat from './pages/Chat/Chat.tsx';
+import Consultation from './pages/Consultation/Consultation.tsx';
+import Archive from './pages/Archive/Archive.tsx';
+import Calculations from './pages/Calculations/Calculations.tsx';
+import Validation from './pages/Validation/Validation.tsx';
+import Documents from './pages/Documents/Documents.tsx';
+import Analytics from './pages/Analytics/Analytics.tsx';
+import Integration from './pages/Integration/Integration.tsx';
+import OutgoingControl from './pages/OutgoingControl/OutgoingControl.tsx';
+import QRValidation from './pages/QRValidation/QRValidation.tsx';
+import Settings from './pages/Settings/Settings.tsx';
 import './App.css';
 
 function App() {

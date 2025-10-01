@@ -2,15 +2,22 @@
 QR валидация РД - Сервис для генерации и валидации QR-кодов рабочей документации
 """
 
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from contextlib import asynccontextmanager
 import uvicorn
 import os
+import sys
 from typing import List, Optional
 import io
 import base64
+import logging
+import traceback
+from datetime import datetime
+
+# Импорт утилит логирования
+from logging_utils import setup_service_logging, log_request, log_error, log_performance, log_business_event
 
 from database import init_db
 from models import QRDocument, DocumentStatus
@@ -23,14 +30,20 @@ from services.qr_service import QRService
 from services.document_service import DocumentService
 from services.validation_service import ValidationService
 
+# Настройка логирования
+logger = setup_service_logging("qr-validation-service")
+
 # Инициализация базы данных при запуске
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    logger.info("🚀 QR Validation Service запускается...")
     await init_db()
+    logger.info("✅ База данных инициализирована")
+    logger.info("📱 QR Validation Service готов к работе")
     yield
     # Shutdown
-    pass
+    logger.info("🛑 QR Validation Service останавливается...")
 
 app = FastAPI(
     title="QR валидация РД",
@@ -48,6 +61,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware для логирования запросов
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    start_time = datetime.now()
+    request_id = f"qr_req_{start_time.strftime('%Y%m%d_%H%M%S_%f')}"
+    
+    logger.info(f"📥 Входящий запрос: {request.method} {request.url.path}", extra={
+        "request_id": request_id,
+        "method": request.method,
+        "path": request.url.path,
+        "query_params": str(request.query_params)
+    })
+    
+    try:
+        response = await call_next(request)
+        process_time = (datetime.now() - start_time).total_seconds()
+        
+        log_request(
+            logger=logger,
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration=process_time,
+            request_id=request_id
+        )
+        
+        return response
+        
+    except Exception as e:
+        process_time = (datetime.now() - start_time).total_seconds()
+        log_error(
+            logger=logger,
+            error=e,
+            context=f"HTTP {request.method} {request.url.path}",
+            request_id=request_id
+        )
+        raise
+
 # Инициализация сервисов
 qr_service = QRService()
 document_service = DocumentService()
@@ -56,6 +107,7 @@ validation_service = ValidationService()
 @app.get("/health")
 async def health_check():
     """Проверка здоровья сервиса"""
+    logger.info("🏥 Health check запрос")
     return {
         "status": "healthy",
         "service": "qr-validation-service",
@@ -73,6 +125,14 @@ async def generate_qr_code(request: QRGenerateRequest):
     - **version**: Версия документа
     - **metadata**: Дополнительные метаданные
     """
+    start_time = datetime.now()
+    logger.info(f"🔧 Генерация QR-кода для документа {request.document_id}", extra={
+        "document_id": request.document_id,
+        "document_type": request.document_type,
+        "project_id": request.project_id,
+        "version": request.version
+    })
+    
     try:
         # Создаем или обновляем запись документа
         document = await document_service.create_or_update_document(
@@ -80,7 +140,7 @@ async def generate_qr_code(request: QRGenerateRequest):
             document_type=request.document_type,
             project_id=request.project_id,
             version=request.version,
-            metadata=request.metadata
+            document_metadata=request.metadata
         )
         
         # Генерируем QR-код
@@ -94,6 +154,25 @@ async def generate_qr_code(request: QRGenerateRequest):
             version=request.version
         )
         
+        duration = (datetime.now() - start_time).total_seconds()
+        log_performance(
+            logger=logger,
+            operation="generate_qr_code",
+            duration=duration,
+            success=True,
+            document_id=request.document_id
+        )
+        
+        log_business_event(
+            logger=logger,
+            event="qr_code_generated",
+            document_id=request.document_id,
+            project_id=request.project_id,
+            document_type=request.document_type
+        )
+        
+        logger.info(f"✅ QR-код успешно сгенерирован для документа {request.document_id}")
+        
         return QRGenerateResponse(
             document_id=request.document_id,
             qr_code_path=qr_path,
@@ -103,6 +182,20 @@ async def generate_qr_code(request: QRGenerateRequest):
         )
         
     except Exception as e:
+        duration = (datetime.now() - start_time).total_seconds()
+        log_performance(
+            logger=logger,
+            operation="generate_qr_code",
+            duration=duration,
+            success=False,
+            document_id=request.document_id
+        )
+        log_error(
+            logger=logger,
+            error=e,
+            context="generate_qr_code",
+            document_id=request.document_id
+        )
         raise HTTPException(status_code=500, detail=f"Ошибка генерации QR-кода: {str(e)}")
 
 @app.post("/qr/validate", response_model=QRValidateResponse)
@@ -113,14 +206,24 @@ async def validate_qr_code(request: QRValidateRequest):
     - **qr_data**: Данные QR-кода для валидации
     - **validate_signature**: Проверять ли цифровую подпись
     """
+    start_time = datetime.now()
+    logger.info("🔍 Валидация QR-кода", extra={
+        "validate_signature": request.validate_signature,
+        "qr_data_length": len(request.qr_data)
+    })
+    
     try:
         # Парсим данные QR-кода
         qr_info = qr_service.parse_qr_data(request.qr_data)
+        document_id = qr_info.get("document_id")
+        
+        logger.info(f"📋 Парсинг QR-кода для документа {document_id}")
         
         # Получаем информацию о документе
-        document = await document_service.get_document(qr_info["document_id"])
+        document = await document_service.get_document(document_id)
         
         if not document:
+            logger.warning(f"⚠️ Документ {document_id} не найден")
             return QRValidateResponse(
                 is_valid=False,
                 status="not_found",
@@ -135,6 +238,25 @@ async def validate_qr_code(request: QRValidateRequest):
             check_signature=request.validate_signature
         )
         
+        duration = (datetime.now() - start_time).total_seconds()
+        log_performance(
+            logger=logger,
+            operation="validate_qr_code",
+            duration=duration,
+            success=validation_result["is_valid"],
+            document_id=document_id
+        )
+        
+        log_business_event(
+            logger=logger,
+            event="qr_code_validated",
+            document_id=document_id,
+            is_valid=validation_result["is_valid"],
+            status=validation_result["status"]
+        )
+        
+        logger.info(f"✅ Валидация QR-кода завершена для документа {document_id}: {validation_result['status']}")
+        
         return QRValidateResponse(
             is_valid=validation_result["is_valid"],
             status=validation_result["status"],
@@ -147,11 +269,23 @@ async def validate_qr_code(request: QRValidateRequest):
                 "status": document.status,
                 "created_at": document.created_at,
                 "updated_at": document.updated_at,
-                "metadata": document.metadata
+                "metadata": document.document_metadata
             }
         )
         
     except Exception as e:
+        duration = (datetime.now() - start_time).total_seconds()
+        log_performance(
+            logger=logger,
+            operation="validate_qr_code",
+            duration=duration,
+            success=False
+        )
+        log_error(
+            logger=logger,
+            error=e,
+            context="validate_qr_code"
+        )
         raise HTTPException(status_code=500, detail=f"Ошибка валидации QR-кода: {str(e)}")
 
 @app.post("/qr/validate-image", response_model=QRValidateResponse)
@@ -208,7 +342,7 @@ async def get_document_info(document_id: str):
             status=document.status,
             created_at=document.created_at,
             updated_at=document.updated_at,
-            metadata=document.metadata
+            metadata=document.document_metadata
         )
         
     except HTTPException:
@@ -251,7 +385,7 @@ async def get_documents(
                 status=doc.status,
                 created_at=doc.created_at,
                 updated_at=doc.updated_at,
-                metadata=doc.metadata
+                metadata=doc.document_metadata
             )
             for doc in documents
         ]

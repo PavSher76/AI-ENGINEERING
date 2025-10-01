@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import Header from './Header';
-import Sidebar from './Sidebar';
+import Header from './Header.tsx';
+import Sidebar from './Sidebar.tsx';
 import './Layout.css';
 
 interface LayoutProps {

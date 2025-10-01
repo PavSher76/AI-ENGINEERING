@@ -24,7 +24,7 @@ class DocumentService:
         title: Optional[str] = None,
         description: Optional[str] = None,
         author: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        document_metadata: Optional[Dict[str, Any]] = None
     ) -> QRDocument:
         """
         Создает или обновляет документ
@@ -56,7 +56,7 @@ class DocumentService:
                 document.title = title
                 document.description = description
                 document.author = author
-                document.metadata = metadata or {}
+                document.document_metadata = document_metadata or {}
                 document.updated_at = datetime.now()
             else:
                 # Создаем новый документ
@@ -68,7 +68,7 @@ class DocumentService:
                     title=title,
                     description=description,
                     author=author,
-                    metadata=metadata or {},
+                    document_metadata=document_metadata or {},
                     status=DocumentStatus.DRAFT
                 )
                 db.add(document)
@@ -192,11 +192,11 @@ class DocumentService:
             
             # Добавляем комментарий в метаданные
             if comment:
-                if not document.metadata:
-                    document.metadata = {}
-                document.metadata["status_comment"] = comment
-                document.metadata["status_updated_by"] = updated_by
-                document.metadata["status_updated_at"] = datetime.now().isoformat()
+                if not document.document_metadata:
+                    document.document_metadata = {}
+                document.document_metadata["status_comment"] = comment
+                document.document_metadata["status_updated_by"] = updated_by
+                document.document_metadata["status_updated_at"] = datetime.now().isoformat()
             
             db.commit()
             db.refresh(document)

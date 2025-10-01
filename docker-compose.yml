@@ -353,6 +353,29 @@ services:
     networks:
       - ai-network
 
+  # TechExpert Connector Service
+  techexpert-connector:
+    build:
+      context: ./services/techexpert-connector
+      dockerfile: Dockerfile
+    ports:
+      - "8014:8014"
+    environment:
+      - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - QDRANT_URL=http://qdrant:6333
+      - TECHEXPERT_API_URL=https://api.techexpert.ru/v1
+      - TECHEXPERT_CLIENT_ID=${TECHEXPERT_CLIENT_ID:-demo_client}
+      - TECHEXPERT_CLIENT_SECRET=${TECHEXPERT_CLIENT_SECRET:-demo_secret}
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+    volumes:
+      - ./services/techexpert-connector:/app
+    networks:
+      - ai-network
+
   # Frontend
   frontend:
     build:
@@ -395,6 +418,7 @@ services:
       - integration-service
       - outgoing-control-service
       - qr-validation-service
+      - techexpert-connector
     networks:
       - ai-network
 

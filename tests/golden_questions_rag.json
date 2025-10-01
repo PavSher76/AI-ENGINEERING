@@ -1,0 +1,268 @@
+{
+  "description": "Golden dataset для тестирования RAG-системы консультаций по НТД",
+  "version": "1.0.0",
+  "created_at": "2025-10-01T00:00:00Z",
+  "categories": {
+    "definitions": {
+      "description": "Вопросы на определения терминов и понятий",
+      "questions": [
+        {
+          "id": "def_001",
+          "question": "Что такое автоматизированная система управления технологическими процессами?",
+          "expected_doc_family": ["ГОСТ", "СП"],
+          "expected_keywords": ["АСУТП", "автоматизированная система", "технологические процессы"],
+          "expected_answer_type": "definition",
+          "difficulty": "easy",
+          "expected_sources": ["ГОСТ 34.601-90", "ГОСТ 34.003-90"]
+        },
+        {
+          "id": "def_002", 
+          "question": "Определение системы противопожарной защиты",
+          "expected_doc_family": ["СП", "НПБ", "ПБ"],
+          "expected_keywords": ["противопожарная защита", "система", "пожарная безопасность"],
+          "expected_answer_type": "definition",
+          "difficulty": "medium",
+          "expected_sources": ["СП 5.13130.2009", "НПБ 88-2001"]
+        },
+        {
+          "id": "def_003",
+          "question": "Что означает термин 'электробезопасность' в нормативных документах?",
+          "expected_doc_family": ["ПУЭ", "ГОСТ"],
+          "expected_keywords": ["электробезопасность", "электроустановки", "защита"],
+          "expected_answer_type": "definition", 
+          "difficulty": "easy",
+          "expected_sources": ["ПУЭ", "ГОСТ 12.1.038-82"]
+        }
+      ]
+    },
+    "scope_of_application": {
+      "description": "Вопросы об области применения документов",
+      "questions": [
+        {
+          "id": "scope_001",
+          "question": "На какие объекты распространяется ГОСТ 21.201-2011?",
+          "expected_doc_family": ["ГОСТ"],
+          "expected_keywords": ["область применения", "распространяется", "объекты"],
+          "expected_answer_type": "scope",
+          "difficulty": "easy",
+          "expected_sources": ["ГОСТ 21.201-2011"],
+          "expected_clause": "4.1"
+        },
+        {
+          "id": "scope_002",
+          "question": "Сфера действия СП 131.13330.2020",
+          "expected_doc_family": ["СП"],
+          "expected_keywords": ["сфера действия", "применение", "строительство"],
+          "expected_answer_type": "scope",
+          "difficulty": "medium", 
+          "expected_sources": ["СП 131.13330.2020"]
+        }
+      ]
+    },
+    "requirements": {
+      "description": "Вопросы о требованиях и нормах",
+      "questions": [
+        {
+          "id": "req_001",
+          "question": "Какие требования к высоте установки пожарных извещателей?",
+          "expected_doc_family": ["СП", "НПБ"],
+          "expected_keywords": ["высота", "пожарные извещатели", "требования", "установка"],
+          "expected_answer_type": "requirement",
+          "difficulty": "medium",
+          "expected_sources": ["СП 5.13130.2009", "НПБ 88-2001"]
+        },
+        {
+          "id": "req_002",
+          "question": "Нормы освещенности рабочих мест в производственных помещениях",
+          "expected_doc_family": ["СНиП", "СП"],
+          "expected_keywords": ["освещенность", "рабочие места", "производственные помещения", "нормы"],
+          "expected_answer_type": "requirement",
+          "difficulty": "hard",
+          "expected_sources": ["СНиП 23-05-95", "СП 52.13330.2016"]
+        }
+      ]
+    },
+    "specific_references": {
+      "description": "Вопросы с конкретными ссылками на документы и пункты",
+      "questions": [
+        {
+          "id": "ref_001",
+          "question": "Что сказано в ГОСТ 21.201-2011 пункт 4.2?",
+          "expected_doc_family": ["ГОСТ"],
+          "expected_keywords": ["ГОСТ 21.201-2011", "пункт 4.2"],
+          "expected_answer_type": "reference",
+          "difficulty": "easy",
+          "expected_sources": ["ГОСТ 21.201-2011"],
+          "expected_clause": "4.2"
+        },
+        {
+          "id": "ref_002",
+          "question": "Требования СП 5.13130.2009 раздел 6 пункт 6.1.3",
+          "expected_doc_family": ["СП"],
+          "expected_keywords": ["СП 5.13130.2009", "раздел 6", "пункт 6.1.3"],
+          "expected_answer_type": "reference",
+          "difficulty": "easy",
+          "expected_sources": ["СП 5.13130.2009"],
+          "expected_clause": "6.1.3"
+        }
+      ]
+    },
+    "comparison": {
+      "description": "Вопросы на сравнение норм и документов",
+      "questions": [
+        {
+          "id": "comp_001",
+          "question": "В чем разница между ГОСТ 21.201-2011 и ГОСТ 21.201-2018?",
+          "expected_doc_family": ["ГОСТ"],
+          "expected_keywords": ["разница", "отличия", "изменения", "ГОСТ 21.201"],
+          "expected_answer_type": "comparison",
+          "difficulty": "hard",
+          "expected_sources": ["ГОСТ 21.201-2011", "ГОСТ 21.201-2018"]
+        },
+        {
+          "id": "comp_002",
+          "question": "Сравните требования к пожарной безопасности в СП 5.13130.2009 и СП 5.13130.2020",
+          "expected_doc_family": ["СП"],
+          "expected_keywords": ["сравнение", "пожарная безопасность", "требования", "СП 5.13130"],
+          "expected_answer_type": "comparison",
+          "difficulty": "hard",
+          "expected_sources": ["СП 5.13130.2009", "СП 5.13130.2020"]
+        }
+      ]
+    },
+    "relevance": {
+      "description": "Вопросы об актуальности и версиях документов",
+      "questions": [
+        {
+          "id": "rel_001",
+          "question": "Актуален ли ГОСТ 21.201-2011 на сегодняшний день?",
+          "expected_doc_family": ["ГОСТ"],
+          "expected_keywords": ["актуален", "действующий", "ГОСТ 21.201-2011"],
+          "expected_answer_type": "relevance",
+          "difficulty": "easy",
+          "expected_sources": ["ГОСТ 21.201-2011", "ГОСТ 21.201-2018"]
+        },
+        {
+          "id": "rel_002",
+          "question": "Какая последняя редакция СП 131.13330?",
+          "expected_doc_family": ["СП"],
+          "expected_keywords": ["последняя редакция", "актуальная версия", "СП 131.13330"],
+          "expected_answer_type": "relevance",
+          "difficulty": "medium",
+          "expected_sources": ["СП 131.13330.2020"]
+        }
+      ]
+    },
+    "complex_queries": {
+      "description": "Сложные составные вопросы",
+      "questions": [
+        {
+          "id": "comp_001",
+          "question": "Какие требования к автоматизированным системам управления технологическими процессами в нефтехимической промышленности?",
+          "expected_doc_family": ["ГОСТ", "СП", "ФНП"],
+          "expected_keywords": ["АСУТП", "нефтехимическая промышленность", "требования", "автоматизированные системы"],
+          "expected_answer_type": "complex",
+          "difficulty": "hard",
+          "expected_sources": ["ГОСТ 34.601-90", "ФНП-001-2018", "СП 131.13330.2020"]
+        },
+        {
+          "id": "comp_002",
+          "question": "Нормы проектирования систем вентиляции и кондиционирования воздуха в медицинских учреждениях",
+          "expected_doc_family": ["СП", "СНиП", "СанПиН"],
+          "expected_keywords": ["вентиляция", "кондиционирование", "медицинские учреждения", "проектирование", "нормы"],
+          "expected_answer_type": "complex",
+          "difficulty": "hard",
+          "expected_sources": ["СП 131.13330.2020", "СНиП 41-01-2003", "СанПиН 2.1.3.2630-10"]
+        }
+      ]
+    }
+  },
+  "evaluation_metrics": {
+    "answerable_at_k": {
+      "description": "Доля вопросов, на которые система может ответить в топ-K результатах",
+      "k_values": [1, 3, 5, 10],
+      "target_threshold": 0.85
+    },
+    "precision_at_k": {
+      "description": "Точность релевантных результатов в топ-K",
+      "k_values": [1, 3, 5, 10],
+      "target_threshold": 0.80
+    },
+    "faithfulness": {
+      "description": "Соответствие ответа извлеченному контексту",
+      "target_threshold": 0.90
+    },
+    "citation_coverage": {
+      "description": "Доля ответов с корректными ссылками на источники",
+      "target_threshold": 0.95
+    },
+    "response_time": {
+      "description": "Время ответа системы",
+      "target_threshold_ms": 3000
+    },
+    "intent_classification_accuracy": {
+      "description": "Точность классификации намерений пользователя",
+      "target_threshold": 0.85
+    }
+  },
+  "test_scenarios": {
+    "baseline": {
+      "description": "Базовое тестирование с простыми запросами",
+      "questions": ["def_001", "scope_001", "ref_001", "rel_001"],
+      "expected_performance": {
+        "answerable_at_5": 0.90,
+        "precision_at_5": 0.85,
+        "response_time_ms": 2000
+      }
+    },
+    "advanced": {
+      "description": "Продвинутое тестирование со сложными запросами",
+      "questions": ["comp_001", "comp_002", "req_002"],
+      "expected_performance": {
+        "answerable_at_10": 0.80,
+        "precision_at_10": 0.75,
+        "response_time_ms": 4000
+      }
+    },
+    "edge_cases": {
+      "description": "Граничные случаи и обработка ошибок",
+      "questions": [
+        {
+          "id": "edge_001",
+          "question": "Требования к несуществующему ГОСТ 99999-9999",
+          "expected_behavior": "graceful_decline",
+          "expected_response": "Документ не найден в базе"
+        },
+        {
+          "id": "edge_002", 
+          "question": "Что такое абстрактное понятие без нормативного определения?",
+          "expected_behavior": "clarification_request",
+          "expected_response": "Уточните, в каком контексте"
+        }
+      ]
+    }
+  },
+  "quality_gates": {
+    "minimum_acceptable": {
+      "answerable_at_5": 0.70,
+      "precision_at_5": 0.65,
+      "faithfulness": 0.80,
+      "citation_coverage": 0.85,
+      "response_time_ms": 5000
+    },
+    "production_ready": {
+      "answerable_at_5": 0.85,
+      "precision_at_5": 0.80,
+      "faithfulness": 0.90,
+      "citation_coverage": 0.95,
+      "response_time_ms": 3000
+    },
+    "excellent": {
+      "answerable_at_5": 0.95,
+      "precision_at_5": 0.90,
+      "faithfulness": 0.95,
+      "citation_coverage": 0.98,
+      "response_time_ms": 2000
+    }
+  }
+}

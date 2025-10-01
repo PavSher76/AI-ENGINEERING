@@ -48,7 +48,7 @@ class QRService:
             project_id=document.project_id,
             version=document.version,
             timestamp=datetime.now(),
-            metadata=document.metadata or {}
+            metadata=document.document_metadata or {}
         )
         
         # Создаем подпись для проверки целостности

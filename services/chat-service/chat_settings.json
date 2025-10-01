@@ -1,0 +1,44 @@
+{
+  "llm": {
+    "model": "llama3.1:8b",
+    "temperature": 0.7,
+    "max_tokens": 2048,
+    "top_p": 0.9,
+    "top_k": 40,
+    "repeat_penalty": 1.1,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0,
+    "stop_sequences": [],
+    "system_prompt": "",
+    "context_length": 4096,
+    "enable_memory": true,
+    "memory_limit": 10,
+    "timeout": 300.0
+  },
+  "chat": {
+    "auto_save": true,
+    "show_timestamps": true,
+    "enable_file_upload": true,
+    "max_file_size_mb": 100,
+    "allowed_file_types": [
+      "pdf",
+      "docx",
+      "xls",
+      "xlsx",
+      "txt",
+      "md"
+    ],
+    "enable_ocr": true,
+    "ocr_language": "rus+eng",
+    "export_format": "docx"
+  },
+  "system": {
+    "debug_mode": false,
+    "log_level": "INFO",
+    "cache_enabled": true,
+    "cache_ttl": 3600,
+    "rate_limit": 100,
+    "timeout": 30
+  },
+  "last_updated": "2025-10-01T10:07:43.805254"
+}
