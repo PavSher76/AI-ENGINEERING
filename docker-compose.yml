@@ -114,25 +114,30 @@ services:
     networks:
       - ai-network
 
-  # Keycloak для SSO (отключено для разработки)
-  # keycloak:
-  #   image: quay.io/keycloak/keycloak:latest
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     KEYCLOAK_ADMIN: admin
-  #     KEYCLOAK_ADMIN_PASSWORD: admin123
-  #     KC_DB: postgres
-  #     KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-  #     KC_DB_USERNAME: ai_user
-  #     KC_DB_PASSWORD: ai_password
-  #   volumes:
-  #     - keycloak_data:/opt/keycloak/data
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - ai-network
-  #   command: start-dev
+  # Keycloak для SSO
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ai_user
+      KC_DB_PASSWORD: ai_password
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KC_PROXY: edge
+      KC_HOSTNAME_URL: http://localhost:8080
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    depends_on:
+      - postgres
+    networks:
+      - ai-network
+    command: start-dev
 
   # RAG Service
   rag-service:
@@ -388,8 +393,8 @@ services:
       - REACT_APP_KEYCLOAK_URL=http://localhost:8080
       - REACT_APP_KEYCLOAK_REALM=ai-engineering
       - REACT_APP_KEYCLOAK_CLIENT_ID=ai-frontend
-    # depends_on:
-    #   - keycloak
+    depends_on:
+      - keycloak
     volumes:
       - ./frontend:/app
       - /app/node_modules

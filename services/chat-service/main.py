@@ -20,6 +20,9 @@ from services.file_processor import FileProcessor
 from services.document_exporter import DocumentExporter
 from services.settings_service import SettingsService
 from services.llm_service import LLMService
+from services.smart_tokenizer import SmartTokenizer
+from services.rag_integration_service import RAGIntegrationService
+from services.keycloak_auth import keycloak_auth, get_current_user, get_current_user_optional, has_role, require_role
 
 # Настройка логирования
 logging.basicConfig(
@@ -46,6 +49,8 @@ file_processor = FileProcessor()
 document_exporter = DocumentExporter()
 settings_service = SettingsService()
 llm_service = LLMService()
+smart_tokenizer = SmartTokenizer()
+rag_integration_service = RAGIntegrationService()
 
 # Инициализация базы данных при запуске
 @asynccontextmanager
@@ -56,6 +61,16 @@ async def lifespan(app: FastAPI):
     logger.info("🔍 OCR включен для растровых PDF")
     logger.info("⚙️ Управление настройками LLM доступно")
     logger.info("📄 Экспорт в DOCX/PDF с кириллицей")
+    logger.info("🔐 Интеграция с Keycloak для авторизации")
+    
+    # Инициализация Keycloak
+    try:
+        await keycloak_auth.initialize()
+        logger.info("✅ Keycloak авторизация инициализирована")
+    except Exception as e:
+        logger.warning(f"⚠️ Ошибка инициализации Keycloak: {e}")
+        logger.warning("Продолжаем в режиме разработки без авторизации")
+    
     yield
     # Shutdown
     logger.info("🛑 Chat Service остановлен")
@@ -169,47 +184,66 @@ async def health():
 # === УПРАВЛЕНИЕ НАСТРОЙКАМИ ===
 
 @app.get("/settings")
-async def get_all_settings():
+async def get_all_settings(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
     """Получить все настройки"""
     return settings_service.get_all_settings()
 
 @app.get("/settings/llm")
-async def get_llm_settings():
+async def get_llm_settings(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
     """Получить настройки LLM"""
     return settings_service.get_llm_settings()
 
 @app.put("/settings/llm")
-async def update_llm_settings(settings: Dict[str, Any]):
+async def update_llm_settings(
+    settings: Dict[str, Any],
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """Обновить настройки LLM"""
+    if not has_role(current_user, "admin") and not has_role(current_user, "developer"):
+        raise HTTPException(status_code=403, detail="Недостаточно прав для изменения настроек LLM")
     return settings_service.update_llm_settings(settings)
 
 @app.get("/settings/chat")
-async def get_chat_settings():
+async def get_chat_settings(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
     """Получить настройки чата"""
     return settings_service.get_chat_settings()
 
 @app.put("/settings/chat")
-async def update_chat_settings(settings: Dict[str, Any]):
+async def update_chat_settings(
+    settings: Dict[str, Any],
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """Обновить настройки чата"""
+    if not has_role(current_user, "admin") and not has_role(current_user, "developer"):
+        raise HTTPException(status_code=403, detail="Недостаточно прав для изменения настроек чата")
     return settings_service.update_chat_settings(settings)
 
 @app.get("/settings/system")
-async def get_system_settings():
+async def get_system_settings(current_user: Dict[str, Any] = Depends(get_current_user)):
     """Получить системные настройки"""
+    if not has_role(current_user, "admin"):
+        raise HTTPException(status_code=403, detail="Недостаточно прав для просмотра системных настроек")
     return settings_service.get_system_settings()
 
 @app.put("/settings/system")
-async def update_system_settings(settings: Dict[str, Any]):
+async def update_system_settings(
+    settings: Dict[str, Any],
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """Обновить системные настройки"""
+    if not has_role(current_user, "admin"):
+        raise HTTPException(status_code=403, detail="Недостаточно прав для изменения системных настроек")
     return settings_service.update_system_settings(settings)
 
 @app.post("/settings/reset")
-async def reset_settings():
+async def reset_settings(current_user: Dict[str, Any] = Depends(get_current_user)):
     """Сбросить настройки к значениям по умолчанию"""
+    if not has_role(current_user, "admin"):
+        raise HTTPException(status_code=403, detail="Недостаточно прав для сброса настроек")
     return settings_service.reset_to_defaults()
 
 @app.get("/settings/available")
-async def get_available_options():
+async def get_available_options(current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)):
     """Получить доступные опции для настроек"""
     models = await settings_service.get_available_models()
     return {
@@ -268,13 +302,177 @@ async def get_supported_formats():
         "max_file_size_mb": file_processor.get_max_file_size() / (1024 * 1024)
     }
 
+@app.post("/analyze/document")
+async def analyze_document_with_rag(
+    message: str = Form(...),
+    session_id: str = Form(default="default"),
+    analysis_type: str = Form(default="general"),
+    files: List[UploadFile] = File(default=[])
+):
+    """Анализ документа с использованием RAG и умной токенизации"""
+    logger.info(f"🔍 Анализ документа. Сессия: {session_id}, Файлов: {len(files)}, Тип: {analysis_type}")
+    
+    try:
+        if not files:
+            raise HTTPException(status_code=400, detail="Необходимо загрузить файл для анализа")
+        
+        # Обрабатываем первый файл
+        file = files[0]
+        file_content = await file.read()
+        
+        # Извлекаем текст из файла
+        file_result = await file_processor.process_file(file_content, file.filename)
+        if not file_result["success"]:
+            raise HTTPException(status_code=400, detail=f"Ошибка обработки файла: {file_result.get('error', 'Неизвестная ошибка')}")
+        
+        # Получаем текст документа
+        document_text = ""
+        if file_result["content"].get("text"):
+            document_text = file_result["content"]["text"]
+        elif file_result["content"].get("sheets"):
+            # Для Excel файлов объединяем все листы
+            for sheet_name, sheet_data in file_result["content"]["sheets"].items():
+                document_text += f"\n--- Лист: {sheet_name} ---\n"
+                document_text += sheet_data.get("text", "")
+        else:
+            raise HTTPException(status_code=400, detail="Не удалось извлечь текст из файла")
+        
+        # Выполняем комплексный анализ
+        analysis_result = await rag_integration_service.get_comprehensive_analysis(
+            document_text=document_text,
+            user_query=message,
+            filename=file.filename
+        )
+        
+        # Сохраняем результат в сессию
+        if session_id not in chat_sessions:
+            chat_sessions[session_id] = {
+                "messages": [],
+                "files": [],
+                "analyses": [],
+                "created_at": datetime.now().isoformat()
+            }
+        
+        chat_sessions[session_id]["analyses"].append(analysis_result)
+        
+        return {
+            "success": True,
+            "analysis_result": analysis_result,
+            "session_id": session_id,
+            "filename": file.filename,
+            "analysis_type": analysis_type
+        }
+        
+    except HTTPException as he:
+        logger.error(f"❌ HTTP ошибка в анализе документа: {he.detail}")
+        raise
+    except Exception as e:
+        logger.error(f"❌ Неожиданная ошибка в анализе документа: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Ошибка анализа документа: {str(e)}")
+
+@app.post("/analyze/tokenize")
+async def tokenize_document(
+    files: List[UploadFile] = File(default=[])
+):
+    """Токенизация документа с умным разделением"""
+    logger.info(f"🔤 Токенизация документа. Файлов: {len(files)}")
+    
+    try:
+        if not files:
+            raise HTTPException(status_code=400, detail="Необходимо загрузить файл для токенизации")
+        
+        # Обрабатываем первый файл
+        file = files[0]
+        file_content = await file.read()
+        
+        # Извлекаем текст из файла
+        file_result = await file_processor.process_file(file_content, file.filename)
+        if not file_result["success"]:
+            raise HTTPException(status_code=400, detail=f"Ошибка обработки файла: {file_result.get('error', 'Неизвестная ошибка')}")
+        
+        # Получаем текст документа
+        document_text = ""
+        if file_result["content"].get("text"):
+            document_text = file_result["content"]["text"]
+        elif file_result["content"].get("sheets"):
+            # Для Excel файлов объединяем все листы
+            for sheet_name, sheet_data in file_result["content"]["sheets"].items():
+                document_text += f"\n--- Лист: {sheet_name} ---\n"
+                document_text += sheet_data.get("text", "")
+        else:
+            raise HTTPException(status_code=400, detail="Не удалось извлечь текст из файла")
+        
+        # Выполняем токенизацию
+        token_chunks, document_structure = await smart_tokenizer.tokenize_document(
+            document_text, file.filename
+        )
+        
+        # Получаем статистику
+        stats = smart_tokenizer.get_tokenization_stats(token_chunks, document_structure)
+        
+        # Преобразуем чанки в словари для JSON сериализации
+        chunks_data = []
+        for chunk in token_chunks:
+            chunks_data.append({
+                "chunk_id": chunk.chunk_id,
+                "text": chunk.text,
+                "token_count": chunk.token_count,
+                "chunk_type": chunk.chunk_type,
+                "metadata": chunk.metadata,
+                "start_position": chunk.start_position,
+                "end_position": chunk.end_position,
+                "parent_section": chunk.parent_section,
+                "importance_score": chunk.importance_score,
+                "context_keywords": chunk.context_keywords
+            })
+        
+        return {
+            "success": True,
+            "filename": file.filename,
+            "document_structure": {
+                "title": document_structure.title,
+                "sections": document_structure.sections,
+                "total_tokens": document_structure.total_tokens,
+                "chunk_count": document_structure.chunk_count,
+                "document_type": document_structure.document_type,
+                "language": document_structure.language,
+                "metadata": document_structure.metadata
+            },
+            "token_chunks": chunks_data,
+            "statistics": stats
+        }
+        
+    except HTTPException as he:
+        logger.error(f"❌ HTTP ошибка в токенизации: {he.detail}")
+        raise
+    except Exception as e:
+        logger.error(f"❌ Неожиданная ошибка в токенизации: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Ошибка токенизации: {str(e)}")
+
+@app.get("/analyze/sessions/{session_id}")
+async def get_analysis_session(session_id: str):
+    """Получить результаты анализов для сессии"""
+    if session_id not in chat_sessions:
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+    
+    session = chat_sessions[session_id]
+    return {
+        "session_id": session_id,
+        "analyses_count": len(session.get("analyses", [])),
+        "analyses": session.get("analyses", []),
+        "created_at": session.get("created_at")
+    }
+
 # === ЧАТ С ИИ ===
 
 @app.post("/chat")
 async def chat_with_ai(
     message: str = Form(...),
     session_id: str = Form(default="default"),
-    files: List[UploadFile] = File(default=[])
+    files: List[UploadFile] = File(default=[]),
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)
 ):
     """Отправить сообщение в чат с ИИ"""
     logger.info(f"💬 Новое сообщение в чат. Сессия: {session_id}, Файлов: {len(files)}")
@@ -356,7 +554,8 @@ async def chat_with_ai(
 async def chat_with_ai_streaming(
     message: str = Form(...),
     session_id: str = Form(default="default"),
-    files: List[UploadFile] = File(default=[])
+    files: List[UploadFile] = File(default=[]),
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)
 ):
     """Отправить сообщение в чат с ИИ (потоковый ответ)"""
     logger.info(f"🌊 Потоковый чат. Сессия: {session_id}, Файлов: {len(files)}")
@@ -566,9 +765,5 @@ if __name__ == "__main__":
         limit_max_requests=1000,
         limit_concurrency=100,
         timeout_keep_alive=300,
-        timeout_graceful_shutdown=30,
-        # Дополнительные настройки для больших запросов
-        limit_request_line=8192,
-        limit_request_fields=100,
-        limit_request_field_size=8192
+        timeout_graceful_shutdown=30
     )
