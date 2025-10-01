@@ -12,6 +12,9 @@ RUN npm ci --legacy-peer-deps
 # Копирование исходного кода
 COPY . .
 
+# Установка переменных окружения для сборки
+ENV REACT_APP_API_URL=http://localhost:80/api
+
 # Сборка приложения
 RUN npm run build
 
