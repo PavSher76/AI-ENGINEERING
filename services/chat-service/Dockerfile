@@ -39,4 +39,4 @@ USER app
 EXPOSE 8003
 
 # Команда запуска с настройками для больших файлов
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload", "--limit-max-requests", "1000", "--limit-concurrency", "100", "--timeout-keep-alive", "30"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload", "--limit-max-requests", "1000", "--limit-concurrency", "100", "--timeout-keep-alive", "300", "--limit-request-line", "8192", "--limit-request-fields", "100", "--limit-request-field-size", "8192"]

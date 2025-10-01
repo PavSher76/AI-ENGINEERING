@@ -69,12 +69,18 @@ app = FastAPI(
     max_request_size=100 * 1024 * 1024,  # 100MB
 )
 
-# Middleware для логирования запросов
+# Middleware для логирования запросов и обработки больших запросов
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = datetime.now()
     logger.info(f"📥 Входящий запрос: {request.method} {request.url}")
     logger.debug(f"Headers: {dict(request.headers)}")
+    
+    # Логируем размер контента если есть
+    content_length = request.headers.get("content-length")
+    if content_length:
+        size_mb = int(content_length) / (1024 * 1024)
+        logger.info(f"📊 Размер запроса: {size_mb:.2f} MB")
     
     try:
         response = await call_next(request)
@@ -95,11 +101,14 @@ app.add_middleware(
         "http://localhost",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:80",
-        "http://127.0.0.1"
+        "http://127.0.0.1",
+        "*"  # Разрешаем все origins для разработки
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600
 )
 
 # Глобальное хранилище чатов (в production использовать Redis/DB)
@@ -556,6 +565,10 @@ if __name__ == "__main__":
         # Настройки для больших файлов
         limit_max_requests=1000,
         limit_concurrency=100,
-        timeout_keep_alive=30,
-        timeout_graceful_shutdown=30
+        timeout_keep_alive=300,
+        timeout_graceful_shutdown=30,
+        # Дополнительные настройки для больших запросов
+        limit_request_line=8192,
+        limit_request_fields=100,
+        limit_request_field_size=8192
     )
