@@ -1,8 +1,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-// import keycloak from './keycloak'; // Отключено для разработки
+import keycloak, { keycloakUtils } from './keycloak';
+import environment from '../config/environment';
 
 // API base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:80/api';
+const API_BASE_URL = environment.api.baseUrl;
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -13,16 +14,16 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add auth token (отключено для разработки)
+// Request interceptor to add auth token
 api.interceptors.request.use(
   (config: AxiosRequestConfig) => {
-    // Для разработки не добавляем токен авторизации
-    // if (keycloak.authenticated && keycloak.token) {
-    //   config.headers = {
-    //     ...config.headers,
-    //     Authorization: `Bearer ${keycloak.token}`,
-    //   };
-    // }
+    // Добавляем токен авторизации если пользователь аутентифицирован
+    if (keycloak.authenticated && keycloak.token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${keycloak.token}`,
+      };
+    }
     return config;
   },
   (error) => {
@@ -30,29 +31,32 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token refresh (отключено для разработки)
+// Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     return response;
   },
   async (error) => {
-    // Для разработки не обрабатываем ошибки авторизации
-    // const originalRequest = error.config;
+    const originalRequest = error.config;
 
-    // if (error.response?.status === 401 && !originalRequest._retry) {
-    //   originalRequest._retry = true;
+    // Обрабатываем ошибки авторизации
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-    //   try {
-    //     await keycloak.updateToken(30);
-    //     if (keycloak.token) {
-    //       originalRequest.headers.Authorization = `Bearer ${keycloak.token}`;
-    //       return api(originalRequest);
-    //     }
-    //   } catch (refreshError) {
-    //     keycloak.logout();
-    //     return Promise.reject(refreshError);
-    //   }
-    // }
+      try {
+        // Пытаемся обновить токен
+        const refreshed = await keycloakUtils.updateToken(30);
+        if (refreshed && keycloak.token) {
+          originalRequest.headers.Authorization = `Bearer ${keycloak.token}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Ошибка обновления токена:', refreshError);
+        // Если не удалось обновить токен, перенаправляем на страницу входа
+        keycloakUtils.logout();
+        return Promise.reject(refreshError);
+      }
+    }
 
     return Promise.reject(error);
   }
