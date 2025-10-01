@@ -1,0 +1,249 @@
+.error-display {
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  margin: 16px 0;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.15);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.error-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.error-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #d32f2f;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.error-suggestion {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.error-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.error-dismiss-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-dismiss-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #666;
+}
+
+.error-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+.error-details-toggle {
+  background: none;
+  border: none;
+  color: #1976d2;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.error-details-toggle:hover {
+  color: #1565c0;
+}
+
+.error-details-content {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.error-detail-item {
+  margin-bottom: 8px;
+}
+
+.error-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.error-detail-item strong {
+  color: #333;
+  display: inline-block;
+  min-width: 80px;
+}
+
+.error-details-json {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-retry {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(244, 67, 54, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.error-retry-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.error-retry-btn:hover {
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+}
+
+.error-retry-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.error-retry-delay {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .error-display {
+    margin: 12px 0;
+    padding: 12px;
+  }
+  
+  .error-header {
+    gap: 8px;
+  }
+  
+  .error-icon {
+    font-size: 20px;
+  }
+  
+  .error-title {
+    font-size: 15px;
+  }
+  
+  .error-suggestion {
+    font-size: 13px;
+  }
+  
+  .error-retry {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .error-retry-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+  .error-display {
+    background: linear-gradient(135deg, #2d1b1b 0%, #3d2525 100%);
+    border-color: #ff6b6b;
+  }
+  
+  .error-title {
+    color: #ff6b6b;
+  }
+  
+  .error-suggestion {
+    color: #ccc;
+  }
+  
+  .error-details-content {
+    background: rgba(0, 0, 0, 0.3);
+    color: #e0e0e0;
+  }
+  
+  .error-detail-item strong {
+    color: #fff;
+  }
+  
+  .error-details-json {
+    background: #1a1a1a;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+  
+  .error-dismiss-btn {
+    color: #ccc;
+  }
+  
+  .error-dismiss-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+}

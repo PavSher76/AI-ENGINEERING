@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './Chat.css';
 import api from '../../services/api.ts';
+import { useErrorHandler } from '../../hooks/useErrorHandler.ts';
+import ErrorDisplay from '../../components/Common/ErrorDisplay.tsx';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -45,6 +47,23 @@ const Chat: React.FC = () => {
   const [sessionId] = useState(`session_${Date.now()}`);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [showSettings, setShowSettings] = useState(false);
+  
+  // Умная обработка ошибок
+  const {
+    error,
+    isRetrying,
+    handleError,
+    executeWithRetry,
+    clearError,
+    retry,
+    canRetry
+  } = useErrorHandler({
+    autoRetry: true,
+    showDetails: true,
+    onError: (errorInfo) => {
+      console.error('Chat error:', errorInfo);
+    }
+  });
   const [llmSettings, setLlmSettings] = useState<LLMSettings>({
     model: 'llama3.1:8b',
     temperature: 0.7,
@@ -68,7 +87,6 @@ const Chat: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('llama3.1:8b');
-  const [error, setError] = useState<string>('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -120,7 +138,8 @@ const Chat: React.FC = () => {
     const oversizedFiles = files.filter(file => file.size > maxSize);
     
     if (oversizedFiles.length > 0) {
-      setError(`Файлы превышают максимальный размер ${chatSettings.max_file_size_mb}MB: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      const error = new Error(`Файлы превышают максимальный размер ${chatSettings.max_file_size_mb}MB: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      handleError(error, 'fileUpload');
       return;
     }
 
@@ -132,12 +151,13 @@ const Chat: React.FC = () => {
     });
 
     if (invalidFiles.length > 0) {
-      setError(`Неподдерживаемые типы файлов: ${invalidFiles.map(f => f.name).join(', ')}`);
+      const error = new Error(`Неподдерживаемые типы файлов: ${invalidFiles.map(f => f.name).join(', ')}`);
+      handleError(error, 'fileUpload');
       return;
     }
 
     setUploadedFiles(prev => [...prev, ...files]);
-    setError('');
+    clearError();
   };
 
   const removeFile = (index: number) => {
@@ -148,9 +168,9 @@ const Chat: React.FC = () => {
     if (!inputMessage.trim() && uploadedFiles.length === 0) return;
 
     setIsLoading(true);
-    setError('');
+    clearError();
 
-    try {
+    const operation = async () => {
       const formData = new FormData();
       formData.append('message', inputMessage);
       formData.append('session_id', sessionId);
@@ -193,10 +213,14 @@ const Chat: React.FC = () => {
         setUploadedFiles([]);
       } else {
         const errorData = await response.json();
-        setError(errorData.detail || 'Ошибка отправки сообщения');
+        throw new Error(errorData.detail || 'Ошибка отправки сообщения');
       }
-    } catch (err) {
-      setError('Ошибка подключения к сервису');
+    };
+
+    try {
+      await executeWithRetry(operation, 'sendMessage');
+    } catch (error: any) {
+      handleError(error, 'sendMessage');
     } finally {
       setIsLoading(false);
     }
@@ -210,27 +234,33 @@ const Chat: React.FC = () => {
   };
 
   const updateLlmSettings = async () => {
-    try {
+    const operation = async () => {
       await api.put('/chat/settings/llm', llmSettings);
-      setError('');
       alert('Настройки LLM обновлены');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка подключения к сервису');
+    };
+
+    try {
+      await executeWithRetry(operation, 'updateLlmSettings');
+    } catch (error: any) {
+      handleError(error, 'updateLlmSettings');
     }
   };
 
   const updateChatSettings = async () => {
-    try {
+    const operation = async () => {
       await api.put('/chat/settings/chat', chatSettings);
-      setError('');
       alert('Настройки чата обновлены');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка подключения к сервису');
+    };
+
+    try {
+      await executeWithRetry(operation, 'updateChatSettings');
+    } catch (error: any) {
+      handleError(error, 'updateChatSettings');
     }
   };
 
   const exportChat = async (format: 'docx' | 'pdf') => {
-    try {
+    const operation = async () => {
       const formData = new FormData();
       formData.append('session_id', sessionId);
       formData.append('filename', `chat_${sessionId}.${format}`);
@@ -253,10 +283,14 @@ const Chat: React.FC = () => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        setError('Ошибка экспорта чата');
+        throw new Error('Ошибка экспорта чата');
       }
-    } catch (err) {
-      setError('Ошибка экспорта чата');
+    };
+
+    try {
+      await executeWithRetry(operation, 'exportChat');
+    } catch (error: any) {
+      handleError(error, 'exportChat');
     }
   };
 
@@ -286,11 +320,12 @@ const Chat: React.FC = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      <ErrorDisplay
+        error={error}
+        onRetry={() => retry()}
+        onDismiss={clearError}
+        showDetails={true}
+      />
 
       <div className="chat-container">
         {/* Настройки */}
