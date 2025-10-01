@@ -126,6 +126,7 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: ai_user
       KC_DB_PASSWORD: ai_password
+      # Отключение HTTPS требований
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_HTTP_ENABLED: true
@@ -135,7 +136,12 @@ services:
       KC_HOSTNAME_ADMIN_STRICT: false
       KC_HOSTNAME_ADMIN_STRICT_HTTPS: false
       KC_HTTP_RELATIVE_PATH: /
+      # Дополнительные параметры для отключения SSL
       KC_SPI_TRUSTSTORE_FILE_HOSTNAME_VERIFICATION_POLICY: ANY
+      KC_SPI_CONNECTIONS_HTTP_CLIENT_DEFAULT_TRUSTSTORE: ""
+      KC_SPI_CONNECTIONS_HTTP_CLIENT_DEFAULT_TRUSTSTORE_PASSWORD: ""
+      # Отключение SSL для development
+      KC_SPI_CONNECTIONS_HTTP_CLIENT_DEFAULT_SSL_MODE: none
     volumes:
       - keycloak_data:/opt/keycloak/data
     depends_on:
