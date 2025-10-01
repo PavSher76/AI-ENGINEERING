@@ -38,5 +38,5 @@ USER app
 # Экспорт порта
 EXPOSE 8003
 
-# Команда запуска
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload"]
+# Команда запуска с настройками для больших файлов
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload", "--limit-max-requests", "1000", "--limit-concurrency", "100", "--timeout-keep-alive", "30"]

@@ -64,7 +64,9 @@ app = FastAPI(
     title="Chat Service - Расширенный",
     description="Сервис чата с ИИ с поддержкой файлов, OCR, настроек и экспорта",
     version="2.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    # Настройки для больших файлов
+    max_request_size=100 * 1024 * 1024,  # 100MB
 )
 
 # Middleware для логирования запросов
@@ -87,9 +89,16 @@ async def log_requests(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:80",
+        "http://localhost",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:80",
+        "http://127.0.0.1"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -540,4 +549,13 @@ def _build_llm_context(session: Dict[str, Any], llm_settings: Dict[str, Any]) ->
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8003)
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8003,
+        # Настройки для больших файлов
+        limit_max_requests=1000,
+        limit_concurrency=100,
+        timeout_keep_alive=30,
+        timeout_graceful_shutdown=30
+    )
