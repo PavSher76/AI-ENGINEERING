@@ -131,6 +131,11 @@ services:
       KC_HTTP_ENABLED: true
       KC_PROXY: edge
       KC_HOSTNAME_URL: http://localhost:8080
+      KC_HOSTNAME_ADMIN_URL: http://localhost:8080
+      KC_HOSTNAME_ADMIN_STRICT: false
+      KC_HOSTNAME_ADMIN_STRICT_HTTPS: false
+      KC_HTTP_RELATIVE_PATH: /
+      KC_SPI_TRUSTSTORE_FILE_HOSTNAME_VERIFICATION_POLICY: ANY
     volumes:
       - keycloak_data:/opt/keycloak/data
     depends_on:
