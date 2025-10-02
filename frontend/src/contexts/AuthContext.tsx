@@ -46,18 +46,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('Пользователь аутентифицирован:', userData);
         }
       } else {
-        // В режиме разработки создаем мок-пользователя
-        const mockUser: User = {
-          id: 'dev-user-1',
-          username: 'developer',
-          email: 'developer@ai-engineering.local',
-          firstName: 'Разработчик',
-          lastName: 'Системы',
-          roles: ['admin', 'user', 'developer'],
-          permissions: ['read', 'write', 'admin'],
-        };
-        setUser(mockUser);
-        console.log('Используется мок-пользователь для разработки');
+        // В режиме разработки не создаем мок-пользователя
+        // Пользователь должен пройти авторизацию через Keycloak
+        setUser(null);
+        console.log('Пользователь не аутентифицирован, требуется авторизация через Keycloak');
       }
       setIsLoading(false);
     }
@@ -84,9 +76,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasRole = (role: string): boolean => {
     if (!user) return false;
     
-    // В режиме разработки разрешаем все роли
+    // Проверяем роль только если пользователь аутентифицирован через Keycloak
     if (!keycloak.authenticated) {
-      return true;
+      return false;
     }
     
     return keycloakUtils.hasRole(role);
@@ -95,9 +87,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     
-    // В режиме разработки разрешаем все права
+    // Проверяем права только если пользователь аутентифицирован через Keycloak
     if (!keycloak.authenticated) {
-      return true;
+      return false;
     }
     
     return user.permissions.includes(permission);
@@ -106,9 +98,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasAnyRole = (roles: string[]): boolean => {
     if (!user) return false;
     
-    // В режиме разработки разрешаем все роли
+    // Проверяем роли только если пользователь аутентифицирован через Keycloak
     if (!keycloak.authenticated) {
-      return true;
+      return false;
     }
     
     return keycloakUtils.hasAnyRole(roles);
@@ -117,9 +109,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasAllRoles = (roles: string[]): boolean => {
     if (!user) return false;
     
-    // В режиме разработки разрешаем все роли
+    // Проверяем роли только если пользователь аутентифицирован через Keycloak
     if (!keycloak.authenticated) {
-      return true;
+      return false;
     }
     
     return keycloakUtils.hasAllRoles(roles);

@@ -4,7 +4,7 @@
   "displayName": "AI Engineering Platform",
   "displayNameHtml": "<div class=\"kc-logo-text\"><span>AI Engineering</span></div>",
   "enabled": true,
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,
   "rememberMe": true,
@@ -86,7 +86,7 @@
   "clientAuthenticationFlow": "clients",
   "dockerAuthenticationFlow": "docker auth",
   "attributes": {
-    "frontendUrl": "https://localhost:3000",
+    "frontendUrl": "http://localhost:3000",
     "adminEventsEnabled": "false",
     "adminEventsDetailsEnabled": "false",
     "eventsEnabled": "false"
@@ -158,14 +158,14 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "ai-frontend-secret",
-      "redirectUris": [
-        "https://localhost:3000/*",
-        "https://localhost/*"
-      ],
-      "webOrigins": [
-        "https://localhost:3000",
-        "https://localhost"
-      ],
+          "redirectUris": [
+            "http://localhost:3000/*",
+            "http://localhost/*"
+          ],
+          "webOrigins": [
+            "http://localhost:3000",
+            "http://localhost"
+          ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,

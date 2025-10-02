@@ -556,8 +556,8 @@ curl -k -X POST "https://localhost:8012/models/llama3.1:8b/generate" \
 
 #### Контакты для получения коммерческой лицензии:
 
-- **Email**: licensing@ai-engineering.com
-- **Телефон**: +7 (495) 123-45-67
+- **Email**: sherstyuk@mail.ru
+- **Телефон**: +7 (916) 587-50-65
 - **Сайт**: https://ai-engineering.com/licensing
 - **Telegram**: @ai_engineering_support
 
