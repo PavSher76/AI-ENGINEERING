@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useKeycloak } from '@react-keycloak/web';
 import { User } from '../types';
-import { keycloakUtils } from '../services/keycloak';
+import { keycloakUtils } from '../services/keycloak.ts';
 
 interface AuthContextType {
   user: User | null;

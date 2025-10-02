@@ -21,7 +21,7 @@ import {
   Person,
   Security,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext.tsx';
 import { useNavigate } from 'react-router-dom';
 import './Header.css';
 

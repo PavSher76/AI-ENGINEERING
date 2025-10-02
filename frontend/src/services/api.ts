@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import keycloak, { keycloakUtils } from './keycloak';
-import environment from '../config/environment';
+import keycloak, { keycloakUtils } from './keycloak.ts';
+import environment from '../config/environment.ts';
 
 // API base URL
 const API_BASE_URL = environment.api.baseUrl;

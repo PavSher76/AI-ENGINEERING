@@ -7,15 +7,15 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
 // Keycloak
-import keycloak, { keycloakEventHandler } from './services/keycloak';
+import keycloak, { keycloakEventHandler } from './services/keycloak.ts';
 
 // Contexts
-import { AuthProvider } from './contexts/AuthContext';
-import { ProjectProvider } from './contexts/ProjectContext';
+import { AuthProvider } from './contexts/AuthContext.tsx';
+import { ProjectProvider } from './contexts/ProjectContext.tsx';
 
 // Components
 import Layout from './components/Layout/Layout.tsx';
-import { ProtectedRoute } from './components/Auth/ProtectedRoute';
+import { ProtectedRoute } from './components/Auth/ProtectedRoute.tsx';
 
 // Pages
 import Login from './pages/Auth/Login.tsx';

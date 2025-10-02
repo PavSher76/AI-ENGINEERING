@@ -414,7 +414,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:8001
+      - REACT_APP_API_URL=https://localhost/api
       - REACT_APP_KEYCLOAK_URL=http://localhost:8080
       - REACT_APP_KEYCLOAK_REALM=ai-engineering
       - REACT_APP_KEYCLOAK_CLIENT_ID=ai-frontend

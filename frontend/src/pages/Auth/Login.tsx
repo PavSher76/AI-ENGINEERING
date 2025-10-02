@@ -21,7 +21,7 @@ import {
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext.tsx';
 
 const Login: React.FC = () => {
   const { keycloak, initialized } = useKeycloak();

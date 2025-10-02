@@ -1,5 +1,5 @@
 import Keycloak from 'keycloak-js';
-import environment from '../config/environment';
+import environment from '../config/environment.ts';
 
 // Конфигурация Keycloak
 const keycloakConfig = {

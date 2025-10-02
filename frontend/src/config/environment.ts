@@ -1,5 +1,5 @@
 // Конфигурация окружения для frontend
-export const environment = {
+const environment = {
   // Keycloak Configuration
   keycloak: {
     url: process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080',
