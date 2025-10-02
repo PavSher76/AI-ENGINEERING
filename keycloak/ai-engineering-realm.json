@@ -1,0 +1,318 @@
+{
+  "id": "ai-engineering",
+  "realm": "ai-engineering",
+  "displayName": "AI Engineering Platform",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>AI Engineering</span></div>",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "defaultRoles": [
+    "offline_access",
+    "uma_authorization"
+  ],
+  "requiredCredentials": [
+    "password"
+  ],
+  "passwordPolicy": "hashIterations(27500)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "otpSupportedApplications": [
+    "FreeOTP",
+    "Google Authenticator"
+  ],
+  "webAuthnPolicyRpEntityName": "keycloak",
+  "webAuthnPolicySignatureAlgorithms": [
+    "ES256"
+  ],
+  "webAuthnPolicyRpId": "",
+  "webAuthnPolicyAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyRequireResidentKey": "not specified",
+  "webAuthnPolicyUserVerificationRequirement": "not specified",
+  "webAuthnPolicyCreateTimeout": 0,
+  "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyAcceptableAaguids": [],
+  "webAuthnPolicyExtraOrigins": [],
+  "browserSecurityHeaders": {
+    "contentSecurityPolicyReportOnly": "",
+    "xContentTypeOptions": "nosniff",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  },
+  "smtpServer": {},
+  "loginTheme": "keycloak",
+  "accountTheme": "keycloak",
+  "adminTheme": "keycloak",
+  "emailTheme": "keycloak",
+  "eventsEnabled": false,
+  "eventsListeners": [
+    "jboss-logging"
+  ],
+  "enabledEventTypes": [],
+  "adminEventsEnabled": false,
+  "adminEventsDetailsEnabled": false,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "en",
+    "ru"
+  ],
+  "defaultLocale": "ru",
+  "browserFlow": "browser",
+  "registrationFlow": "registration",
+  "directGrantFlow": "direct grant",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients",
+  "dockerAuthenticationFlow": "docker auth",
+  "attributes": {
+    "frontendUrl": "https://localhost:3000",
+    "adminEventsEnabled": "false",
+    "adminEventsDetailsEnabled": "false",
+    "eventsEnabled": "false"
+  },
+  "keycloakVersion": "26.3.2",
+  "userManagedAccessAllowed": false,
+  "clientProfiles": {
+    "profiles": []
+  },
+  "clientPolicies": {
+    "policies": []
+  },
+  "roles": {
+    "realm": [
+      {
+        "id": "admin-role",
+        "name": "admin",
+        "description": "Administrator role with full access",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ai-engineering",
+        "attributes": {}
+      },
+      {
+        "id": "developer-role",
+        "name": "developer",
+        "description": "Developer role with development access",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ai-engineering",
+        "attributes": {}
+      },
+      {
+        "id": "analyst-role",
+        "name": "analyst",
+        "description": "Analyst role with analysis access",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ai-engineering",
+        "attributes": {}
+      },
+      {
+        "id": "viewer-role",
+        "name": "viewer",
+        "description": "Viewer role with read-only access",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ai-engineering",
+        "attributes": {}
+      },
+      {
+        "id": "user-role",
+        "name": "user",
+        "description": "Basic user role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ai-engineering",
+        "attributes": {}
+      }
+    ]
+  },
+  "clients": [
+    {
+      "id": "ai-frontend-client",
+      "clientId": "ai-frontend",
+      "name": "AI Engineering Frontend",
+      "description": "Frontend client for AI Engineering Platform",
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "ai-frontend-secret",
+      "redirectUris": [
+        "https://localhost:3000/*",
+        "https://localhost/*"
+      ],
+      "webOrigins": [
+        "https://localhost:3000",
+        "https://localhost"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client.session.idle.timeout": "0",
+        "client.session.max.lifespan": "0",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "role_list",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "admin-user",
+      "username": "admin",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Администратор",
+      "lastName": "Системы",
+      "email": "admin@ai-engineering.local",
+      "credentials": [
+        {
+          "id": "admin-password",
+          "type": "password",
+          "userLabel": "admin",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "admin",
+        "user"
+      ],
+      "clientRoles": {},
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "developer-user",
+      "username": "developer",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Разработчик",
+      "lastName": "Системы",
+      "email": "developer@ai-engineering.local",
+      "credentials": [
+        {
+          "id": "developer-password",
+          "type": "password",
+          "userLabel": "developer",
+          "value": "developer",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "developer",
+        "user"
+      ],
+      "clientRoles": {},
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "analyst-user",
+      "username": "analyst",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Аналитик",
+      "lastName": "Системы",
+      "email": "analyst@ai-engineering.local",
+      "credentials": [
+        {
+          "id": "analyst-password",
+          "type": "password",
+          "userLabel": "analyst",
+          "value": "analyst",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "analyst",
+        "user"
+      ],
+      "clientRoles": {},
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "viewer-user",
+      "username": "viewer",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Наблюдатель",
+      "lastName": "Системы",
+      "email": "viewer@ai-engineering.local",
+      "credentials": [
+        {
+          "id": "viewer-password",
+          "type": "password",
+          "userLabel": "viewer",
+          "value": "viewer",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "viewer",
+        "user"
+      ],
+      "clientRoles": {},
+      "notBefore": 0,
+      "groups": []
+    }
+  ]
+}

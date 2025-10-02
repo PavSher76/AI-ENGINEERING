@@ -2,14 +2,14 @@
 export const environment = {
   // Keycloak Configuration
   keycloak: {
-    url: process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080',
+    url: process.env.REACT_APP_KEYCLOAK_URL || 'https://localhost:8080',
     realm: process.env.REACT_APP_KEYCLOAK_REALM || 'ai-engineering',
     clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || 'ai-frontend',
   },
   
   // API Configuration
   api: {
-    baseUrl: process.env.REACT_APP_API_URL || 'http://localhost:80/api',
+    baseUrl: process.env.REACT_APP_API_URL || 'https://localhost/api',
   },
   
   // Development Mode

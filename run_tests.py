@@ -63,7 +63,7 @@ def run_tests(test_type="all", coverage=True, parallel=False):
     
     # Базовые параметры pytest
     base_args = [
-        "python", "-m", "pytest",
+        "python3", "-m", "pytest",
         "-v",
         "--tb=short",
         "--disable-warnings",

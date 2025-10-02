@@ -33,9 +33,10 @@
 - **Database**: PostgreSQL, Redis, Vector DB (Qdrant)
 - **AI**: Ollama (локально), LangChain
 - **Containerization**: Docker, Docker Compose
-- **Authentication**: Keycloak (SSO)
+- **Authentication**: Keycloak (SSO) с HTTPS
 - **File Storage**: MinIO
 - **Message Queue**: RabbitMQ
+- **🆕 SSL/TLS**: Самоподписанные сертификаты для разработки
 - **🆕 Logging**: Структурированное логирование с JSON, ротация логов, мониторинг
 
 ## 💬 Расширенный Чат с ИИ
@@ -64,9 +65,9 @@
 - `POST /export/pdf` - Экспорт в PDF
 
 ### Доступ:
-- **URL**: http://localhost:8003
-- **Frontend**: http://localhost:3000/chat
-- **Swagger UI**: http://localhost:8003/docs
+- **URL**: https://localhost:8003
+- **Frontend**: https://localhost/chat
+- **Swagger UI**: https://localhost:8003/docs
 
 ## 🔍 Улучшенная RAG-система для НТД
 
@@ -100,9 +101,9 @@
 - `POST /sync/trigger` - запуск синхронизации
 
 ### Доступ:
-- **URL**: http://localhost:8014
-- **Health Check**: http://localhost:8014/health
-- **API Docs**: http://localhost:8014/docs
+- **URL**: https://localhost:8014
+- **Health Check**: https://localhost:8014/health
+- **API Docs**: https://localhost:8014/docs
 - **OpenAPI Spec**: [schemas/techexpert_connector_openapi.yaml](schemas/techexpert_connector_openapi.yaml)
 
 ### Тестирование:
@@ -128,9 +129,9 @@
 - `GET /api/outgoing-control/stats` - Статистика сервиса
 
 ### Доступ:
-- **Прямой доступ:** http://localhost:8011
-- **API документация:** http://localhost:8011/docs
-- **Через Nginx:** http://localhost/api/outgoing-control/
+- **Прямой доступ:** https://localhost:8011
+- **API документация:** https://localhost:8011/docs
+- **Через Nginx:** https://localhost/api/outgoing-control/
 
 ## 🆕 Новый модуль: QR валидация РД
 
@@ -163,10 +164,48 @@
 - `GET /api/qr-validation/qr/download/{id}` - Скачивание QR-кода
 
 ### Доступ:
-- **Прямой доступ:** http://localhost:8013
-- **API документация:** http://localhost:8013/docs
-- **Через Nginx:** http://localhost/api/qr-validation/
-- **Веб-интерфейс:** http://localhost:3000/qr-validation
+- **Прямой доступ:** https://localhost:8013
+- **API документация:** https://localhost:8013/docs
+- **Через Nginx:** https://localhost/api/qr-validation/
+- **Веб-интерфейс:** https://localhost/qr-validation
+
+## 🔐 SSL/TLS Конфигурация
+
+### Возможности:
+- **HTTPS для всех сервисов** - защищенные SSL соединения
+- **Автоматическое перенаправление** HTTP → HTTPS
+- **Самоподписанные сертификаты** для разработки
+- **Security headers** - защита от атак
+- **Keycloak с HTTPS** - безопасная аутентификация
+
+### SSL Сертификаты:
+- **Сертификат**: `ssl/localhost.crt`
+- **Приватный ключ**: `ssl/localhost.key`
+- **PEM файл**: `ssl/localhost.pem`
+- **Действителен для**: localhost, *.localhost, 127.0.0.1, ::1
+
+### Генерация сертификатов:
+```bash
+# Генерация SSL сертификатов
+./scripts/generate_ssl_certs.sh
+
+# Тестирование SSL соединений
+./scripts/test_ssl.sh
+```
+
+### Доступные HTTPS URL:
+- **Frontend**: https://localhost
+- **Keycloak Admin**: https://localhost:8080/admin
+- **Keycloak Realm**: https://localhost:8080/realms/ai-engineering
+- **API Endpoints**: https://localhost/api/*
+
+### ⚠️ Важно для разработки:
+- Используются **самоподписанные сертификаты**
+- В браузере появится предупреждение о безопасности
+- Нажмите "Дополнительно" → "Перейти на localhost (небезопасно)"
+
+### Документация:
+- [Подробная документация по SSL](docs/SSL_SETUP_REPORT.md)
 
 ## 📊 Система логирования
 
@@ -179,6 +218,10 @@
 
 ### Утилиты управления:
 ```bash
+# SSL управление
+./scripts/generate_ssl_certs.sh    # Генерация SSL сертификатов
+./scripts/test_ssl.sh              # Тестирование SSL соединений
+
 # Просмотр логов сервисов
 ai-logs chat          # Логи Chat Service
 ai-logs qr            # Логи QR Validation Service
@@ -207,12 +250,18 @@ ai-log-monitor --report --hours 24
 git clone <repository-url>
 cd AI-Engineering
 
+# Генерация SSL сертификатов (обязательно)
+./scripts/generate_ssl_certs.sh
+
 # Запуск Ollama на хосте (обязательно)
 ollama serve
 ollama pull llama2
 
 # Запуск всех сервисов
 docker-compose up -d
+
+# Тестирование SSL соединений
+./scripts/test_ssl.sh
 ```
 
 ### ⚠️ Важно: Ollama на хосте
@@ -233,6 +282,8 @@ ollama pull llama2
 Все сервисы подключаются к Ollama через `host.docker.internal:11434`.
 
 ### ⚠️ Важно для разработки
+
+**SSL/HTTPS настроен** с самоподписанными сертификатами для разработки. В браузере появится предупреждение о безопасности.
 
 **Авторизация отключена** для упрощения разработки и тестирования. Система работает без Keycloak и проверки токенов.
 
@@ -257,17 +308,19 @@ AI-Engineering/
 ├── frontend/                # Веб-интерфейс
 ├── shared/                  # Общие компоненты
 ├── infrastructure/          # Инфраструктура
+├── ssl/                     # 🔐 SSL сертификаты
+├── keycloak/                # 🔐 Keycloak конфигурация
 ├── docs/                    # Документация
 └── scripts/                 # Скрипты развертывания
 ```
 
 ## Статус сервисов
 
-### 🟢 Работающие сервисы (17/17):
+### 🟢 Работающие сервисы (18/18):
 
 **Инфраструктура:**
-- **Frontend:** ✅ http://localhost (Nginx статический)
-- **Nginx:** ✅ Reverse proxy (порт 80)
+- **Frontend:** ✅ https://localhost (Nginx с SSL)
+- **Nginx:** ✅ Reverse proxy с HTTPS (порты 80, 443)
 - **PostgreSQL:** ✅ База данных (порт 5432)
 - **Redis:** ✅ Кэширование (порт 6379)
 - **Qdrant:** ✅ Векторная БД (порты 6333-6334)
@@ -275,29 +328,31 @@ AI-Engineering/
 - **RabbitMQ:** ✅ Очереди сообщений (порты 5672, 15672)
 - **Ollama:** ✅ AI модели (порт 11434) - запускается на хосте
 - **vLLM:** ✅ Высокопроизводительный LLM сервер (порт 8002)
+- **Keycloak:** ✅ SSO аутентификация с HTTPS (порт 8080)
 
 **Микросервисы:**
-- **RAG Service:** ✅ http://localhost:8001
-- **💬 Chat Service (Расширенный):** ✅ http://localhost:8003 - Чат с ИИ с файлами, OCR, настройками
-- **Consultation Service:** ✅ http://localhost:8004
-- **Archive Service:** ✅ http://localhost:8005
-- **Calculation Service:** ✅ http://localhost:8006
-- **Validation Service:** ✅ http://localhost:8007
-- **Document Service:** ✅ http://localhost:8008
-- **Analytics Service:** ✅ http://localhost:8009
-- **Integration Service:** ✅ http://localhost:8010
-- **🆕 Outgoing Control Service:** ✅ http://localhost:8011
-- **🆕 Ollama Management Service:** ✅ http://localhost:8012
-- **🆕 QR валидация РД:** ✅ http://localhost:8013
-- **🔍 TechExpert Connector:** ✅ http://localhost:8014 - RAG-система для НТД с интеграцией API "Техэксперт"
+- **RAG Service:** ✅ https://localhost:8001
+- **💬 Chat Service (Расширенный):** ✅ https://localhost:8003 - Чат с ИИ с файлами, OCR, настройками
+- **Consultation Service:** ✅ https://localhost:8004
+- **Archive Service:** ✅ https://localhost:8005
+- **Calculation Service:** ✅ https://localhost:8006
+- **Validation Service:** ✅ https://localhost:8007
+- **Document Service:** ✅ https://localhost:8008
+- **Analytics Service:** ✅ https://localhost:8009
+- **Integration Service:** ✅ https://localhost:8010
+- **🆕 Outgoing Control Service:** ✅ https://localhost:8011
+- **🆕 Ollama Management Service:** ✅ https://localhost:8012
+- **🆕 QR валидация РД:** ✅ https://localhost:8013
+- **🔍 TechExpert Connector:** ✅ https://localhost:8014 - RAG-система для НТД с интеграцией API "Техэксперт"
 
 ### Доступные интерфейсы:
-- **🆕 Веб-интерфейс:** http://localhost:3000 (React фронтенд)
-- **Основной интерфейс:** http://localhost (Nginx)
-- **API документация:** http://localhost:8003/docs (Chat Service)
-- **🆕 Outgoing Control API:** http://localhost:8011/docs
-- **🆕 vLLM API:** http://localhost:8002/docs
-- **🆕 Ollama Management API:** http://localhost:8012/docs
+- **🆕 Веб-интерфейс:** https://localhost (React фронтенд с SSL)
+- **Основной интерфейс:** https://localhost (Nginx с HTTPS)
+- **API документация:** https://localhost:8003/docs (Chat Service)
+- **🆕 Outgoing Control API:** https://localhost:8011/docs
+- **🆕 vLLM API:** https://localhost:8002/docs
+- **🆕 Ollama Management API:** https://localhost:8012/docs
+- **🔐 Keycloak Admin:** https://localhost:8080/admin
 - **RabbitMQ Management:** http://localhost:15672
 - **MinIO Console:** http://localhost:9001
 
@@ -307,7 +362,7 @@ AI-Engineering/
 
 ```bash
 # 1. Создание документа
-curl -X POST "http://localhost:8011/documents/" \
+curl -k -X POST "https://localhost:8011/documents/" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Деловое письмо клиенту",
@@ -315,11 +370,11 @@ curl -X POST "http://localhost:8011/documents/" \
   }'
 
 # 2. Загрузка файла
-curl -X POST "http://localhost:8011/documents/{document_id}/upload" \
+curl -k -X POST "https://localhost:8011/documents/{document_id}/upload" \
   -F "file=@business_letter.pdf"
 
 # 3. Полная обработка документа
-curl -X POST "http://localhost:8011/documents/{document_id}/process" \
+curl -k -X POST "https://localhost:8011/documents/{document_id}/process" \
   -H "Content-Type: application/json" \
   -d '{
     "checks_to_perform": [
@@ -331,7 +386,7 @@ curl -X POST "http://localhost:8011/documents/{document_id}/process" \
   }'
 
 # 4. Финальная проверка с LLM
-curl -X POST "http://localhost:8011/final-review" \
+curl -k -X POST "https://localhost:8011/final-review" \
   -H "Content-Type: application/json" \
   -d '{
     "document_id": "uuid-here",
@@ -375,8 +430,8 @@ curl -X POST "http://localhost:8011/final-review" \
 - **Настройки** - Конфигурация системы
 
 ### Доступ:
-- **Веб-интерфейс:** http://localhost:3000
-- **Дашборд:** http://localhost:3000/ (главная страница)
+- **Веб-интерфейс:** https://localhost
+- **Дашборд:** https://localhost/ (главная страница)
 
 ## 🔄 Векторная база данных Qdrant
 
@@ -420,9 +475,9 @@ curl -X POST "http://localhost:8011/final-review" \
 - **Ollama:** Запускается на хосте, vLLM подключается через `host.docker.internal:11434`
 
 ### Доступ к vLLM:
-- **API:** http://localhost:8002
-- **Документация:** http://localhost:8002/docs
-- **OpenAI совместимость:** http://localhost:8002/v1
+- **API:** https://localhost:8002
+- **Документация:** https://localhost:8002/docs
+- **OpenAI совместимость:** https://localhost:8002/v1
 
 ## 🤖 Тестирование ИИ
 
@@ -430,13 +485,13 @@ curl -X POST "http://localhost:8011/final-review" \
 
 ```bash
 # Проверка статуса Ollama
-curl http://localhost:8012/status
+curl -k https://localhost:8012/status
 
 # Получение списка доступных моделей
-curl http://localhost:8012/models
+curl -k https://localhost:8012/models
 
 # Тестирование генерации текста
-curl -X POST "http://localhost:8012/models/llama3.1:8b/generate" \
+curl -k -X POST "https://localhost:8012/models/llama3.1:8b/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Привет! Как дела?", "max_tokens": 50}'
 ```
