@@ -18,132 +18,159 @@ const Dashboard: React.FC = () => {
   const serviceList: Omit<ServiceStatus, 'status' | 'lastCheck'>[] = [
     {
       name: 'Frontend',
-      url: 'http://localhost',
-      port: 80,
+      url: 'https://localhost',
+      port: 443,
       description: 'Веб-интерфейс системы'
     },
     {
       name: 'Nginx',
-      url: 'http://localhost',
-      port: 80,
+      url: 'https://localhost',
+      port: 443,
       description: 'Reverse proxy и статический сервер'
     },
     {
+      name: 'Keycloak',
+      url: 'https://localhost:8080',
+      port: 8080,
+      description: 'Система авторизации'
+    },
+    {
       name: 'PostgreSQL',
-      url: 'http://localhost',
+      url: 'https://localhost',
       port: 5432,
       description: 'Основная база данных'
     },
     {
       name: 'Redis',
-      url: 'http://localhost',
+      url: 'https://localhost',
       port: 6379,
       description: 'Кэширование и сессии'
     },
     {
       name: 'Qdrant',
-      url: 'http://localhost:6333',
+      url: 'https://localhost:6333',
       port: 6333,
       description: 'Векторная база данных'
     },
     {
       name: 'MinIO',
-      url: 'http://localhost:9001',
+      url: 'https://localhost:9001',
       port: 9001,
       description: 'Файловое хранилище'
     },
     {
       name: 'RabbitMQ',
-      url: 'http://localhost:15672',
+      url: 'https://localhost:15672',
       port: 15672,
       description: 'Очереди сообщений'
     },
     {
       name: 'Ollama',
-      url: 'http://localhost:11434',
+      url: 'https://localhost:11434',
       port: 11434,
       description: 'AI модели (локально)'
     },
     {
       name: 'vLLM',
-      url: 'http://localhost:8002',
+      url: 'https://localhost:8002',
       port: 8002,
       description: 'Высокопроизводительный LLM сервер'
     },
     {
       name: 'RAG Service',
-      url: 'http://localhost:8001',
-      port: 8001,
+      url: 'https://localhost/api/rag',
+      port: 443,
       description: 'Сервис векторного поиска'
     },
     {
       name: 'Chat Service',
-      url: 'http://localhost:8003',
-      port: 8003,
+      url: 'https://localhost/api/chat',
+      port: 443,
       description: 'Сервис чата с ИИ'
     },
     {
       name: 'Consultation Service',
-      url: 'http://localhost:8004',
-      port: 8004,
+      url: 'https://localhost/api/consultation',
+      port: 443,
       description: 'Консультации по НТД'
     },
     {
       name: 'Archive Service',
-      url: 'http://localhost:8005',
-      port: 8005,
+      url: 'https://localhost/api/archive',
+      port: 443,
       description: 'Архив и объекты аналоги'
     },
     {
       name: 'Calculation Service',
-      url: 'http://localhost:8006',
-      port: 8006,
+      url: 'https://localhost/api/calculation',
+      port: 443,
       description: 'Инженерные расчеты'
     },
     {
       name: 'Validation Service',
-      url: 'http://localhost:8007',
-      port: 8007,
+      url: 'https://localhost/api/validation',
+      port: 443,
       description: 'Валидация данных'
     },
     {
       name: 'Document Service',
-      url: 'http://localhost:8008',
-      port: 8008,
+      url: 'https://localhost/api/document',
+      port: 443,
       description: 'Управление документами'
     },
     {
       name: 'Analytics Service',
-      url: 'http://localhost:8009',
-      port: 8009,
+      url: 'https://localhost/api/analytics',
+      port: 443,
       description: 'Аналитика проектов'
     },
     {
       name: 'Integration Service',
-      url: 'http://localhost:8010',
-      port: 8010,
+      url: 'https://localhost/api/integration',
+      port: 443,
       description: 'Интеграции с PLM'
     },
     {
       name: 'Outgoing Control Service',
-      url: 'http://localhost:8011',
-      port: 8011,
+      url: 'https://localhost/api/outgoing-control',
+      port: 443,
       description: 'Выходной контроль документов'
     },
     {
-      name: 'Ollama Management Service',
-      url: 'http://localhost:8012',
-      port: 8012,
-      description: 'Управление моделями Ollama'
+      name: 'QR Validation Service',
+      url: 'https://localhost/api/qr-validation',
+      port: 443,
+      description: 'Валидация QR кодов'
     }
   ];
 
   const checkServiceStatus = async (service: Omit<ServiceStatus, 'status' | 'lastCheck'>): Promise<ServiceStatus> => {
     try {
-      const response = await fetch(`${service.url}/health`, {
+      // Для некоторых сервисов используем специальные endpoints
+      let healthUrl = `${service.url}/health`;
+      
+      // Специальные случаи для сервисов, которые не имеют /health endpoint
+      if (service.name === 'Frontend' || service.name === 'Nginx') {
+        healthUrl = service.url;
+      } else if (service.name === 'Keycloak') {
+        healthUrl = `${service.url}/realms/ai-engineering/.well-known/openid-configuration`;
+      } else if (service.name === 'PostgreSQL' || service.name === 'Redis') {
+        // Эти сервисы не имеют HTTP endpoints, помечаем как unknown
+        return {
+          ...service,
+          status: 'unknown',
+          lastCheck: new Date().toLocaleTimeString()
+        };
+      }
+
+      const response = await fetch(healthUrl, {
         method: 'GET',
-        timeout: 5000,
-      } as any);
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
       
       if (response.ok) {
         return {
@@ -159,6 +186,7 @@ const Dashboard: React.FC = () => {
         };
       }
     } catch (error) {
+      console.warn(`Failed to check ${service.name}:`, error);
       return {
         ...service,
         status: 'error',
