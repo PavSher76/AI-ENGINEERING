@@ -161,6 +161,13 @@ const Dashboard: React.FC = () => {
           status: 'unknown',
           lastCheck: new Date().toLocaleTimeString()
         };
+      } else if (service.name === 'vLLM' || service.name === 'Ollama') {
+        // Эти сервисы могут быть не запущены, помечаем как unknown
+        return {
+          ...service,
+          status: 'unknown',
+          lastCheck: new Date().toLocaleTimeString()
+        };
       }
 
       const response = await fetch(healthUrl, {
@@ -187,6 +194,16 @@ const Dashboard: React.FC = () => {
       }
     } catch (error) {
       console.warn(`Failed to check ${service.name}:`, error);
+      
+      // Для сервисов с CORS проблемами помечаем как warning вместо error
+      if (service.name === 'MinIO' || service.name === 'RabbitMQ' || service.name === 'Qdrant') {
+        return {
+          ...service,
+          status: 'warning',
+          lastCheck: new Date().toLocaleTimeString()
+        };
+      }
+      
       return {
         ...service,
         status: 'error',
