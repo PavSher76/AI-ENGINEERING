@@ -159,7 +159,7 @@ services:
     networks:
       - ai-network
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8080/health/ready"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 30s
       timeout: 10s
       retries: 3
