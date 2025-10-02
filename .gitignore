@@ -112,3 +112,11 @@ coverage.xml
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# SSL certificates and private keys
+ssl/
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
