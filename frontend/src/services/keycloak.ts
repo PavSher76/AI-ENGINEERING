@@ -1,5 +1,6 @@
 import Keycloak from 'keycloak-js';
 import environment from '../config/environment.ts';
+import { logger } from '../utils/logger.ts';
 
 // Конфигурация Keycloak
 const keycloakConfig = {
@@ -22,14 +23,39 @@ const initOptions = {
 // Функция инициализации Keycloak
 export const initKeycloak = (): Promise<boolean> => {
   return new Promise((resolve, reject) => {
+    logger.authInfo('Начало инициализации Keycloak', {
+      config: keycloakConfig,
+      initOptions,
+      sessionId: logger.getSessionId()
+    });
+
     keycloak
       .init(initOptions)
       .then((authenticated) => {
-        console.log('Keycloak инициализирован:', authenticated);
+        logger.authInfo('Keycloak инициализирован успешно', {
+          authenticated,
+          token: authenticated ? keycloak.token : null,
+          refreshToken: authenticated ? keycloak.refreshToken : null,
+          sessionId: logger.getSessionId()
+        });
+        
+        if (authenticated) {
+          const userInfo = keycloakUtils.getUserInfo();
+          logger.authInfo('Информация о пользователе получена', {
+            userInfo,
+            roles: keycloakUtils.getUserInfo()?.roles || [],
+            sessionId: logger.getSessionId()
+          });
+        }
+        
         resolve(authenticated);
       })
       .catch((error) => {
-        console.error('Ошибка инициализации Keycloak:', error);
+        logger.authError('Ошибка инициализации Keycloak', {
+          error: error.message || error,
+          stack: error.stack,
+          sessionId: logger.getSessionId()
+        });
         reject(error);
       });
   });
@@ -37,39 +63,90 @@ export const initKeycloak = (): Promise<boolean> => {
 
 // Обработчики событий Keycloak
 export const keycloakEventHandler = (eventType: string, error?: any) => {
-  console.log('Keycloak событие:', eventType, error);
+  const sessionId = logger.getSessionId();
+  const userInfo = keycloakUtils.getUserInfo();
+  
+  logger.authDebug('Keycloak событие получено', {
+    eventType,
+    error: error?.message || error,
+    authenticated: keycloak.authenticated,
+    userId: userInfo?.id,
+    sessionId
+  });
   
   switch (eventType) {
     case 'onReady':
-      console.log('Keycloak готов');
+      logger.authInfo('Keycloak готов к работе', {
+        authenticated: keycloak.authenticated,
+        sessionId
+      });
       break;
     case 'onInitError':
-      console.error('Ошибка инициализации Keycloak:', error);
+      logger.authError('Ошибка инициализации Keycloak', {
+        error: error?.message || error,
+        stack: error?.stack,
+        sessionId
+      });
       break;
     case 'onAuthSuccess':
-      console.log('Успешная авторизация');
+      logger.authInfo('Успешная авторизация пользователя', {
+        userInfo,
+        roles: userInfo?.roles || [],
+        sessionId
+      });
       break;
     case 'onAuthError':
-      console.error('Ошибка авторизации:', error);
+      logger.authError('Ошибка авторизации', {
+        error: error?.message || error,
+        errorType: error?.error,
+        errorDescription: error?.error_description,
+        sessionId
+      });
       break;
     case 'onAuthRefreshSuccess':
-      console.log('Токен обновлен успешно');
+      logger.authInfo('Токен обновлен успешно', {
+        userId: userInfo?.id,
+        sessionId
+      });
       break;
     case 'onAuthRefreshError':
-      console.error('Ошибка обновления токена:', error);
+      logger.authError('Ошибка обновления токена', {
+        error: error?.message || error,
+        userId: userInfo?.id,
+        sessionId
+      });
       break;
     case 'onAuthLogout':
-      console.log('Пользователь вышел из системы');
+      logger.authInfo('Пользователь вышел из системы', {
+        userId: userInfo?.id,
+        sessionId
+      });
       break;
     case 'onTokenExpired':
-      console.log('Токен истек, обновляем...');
-      keycloak.updateToken(30).catch((error) => {
-        console.error('Ошибка обновления токена:', error);
+      logger.authWarn('Токен истек, начинаем обновление', {
+        userId: userInfo?.id,
+        sessionId
+      });
+      keycloak.updateToken(30).then(() => {
+        logger.authInfo('Токен обновлен после истечения', {
+          userId: userInfo?.id,
+          sessionId
+        });
+      }).catch((error) => {
+        logger.authError('Ошибка обновления токена после истечения', {
+          error: error?.message || error,
+          userId: userInfo?.id,
+          sessionId
+        });
         keycloak.logout();
       });
       break;
     default:
-      console.log('Неизвестное событие Keycloak:', eventType);
+      logger.authDebug('Неизвестное событие Keycloak', {
+        eventType,
+        error: error?.message || error,
+        sessionId
+      });
   }
 };
 
@@ -126,11 +203,21 @@ export const keycloakUtils = {
 
   // Вход в систему
   login: (options?: any) => {
+    logger.authInfo('Попытка входа в систему', {
+      options,
+      sessionId: logger.getSessionId()
+    });
     keycloak.login(options);
   },
 
   // Выход из системы
   logout: (options?: any) => {
+    const userInfo = keycloakUtils.getUserInfo();
+    logger.authInfo('Попытка выхода из системы', {
+      userId: userInfo?.id,
+      options,
+      sessionId: logger.getSessionId()
+    });
     keycloak.logout(options);
   },
 

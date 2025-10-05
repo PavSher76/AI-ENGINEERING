@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import { logger } from '../../utils/logger.ts';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -20,6 +21,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, isAuthenticated, isLoading, hasRole, hasPermission, hasAllRoles, hasAnyRole } = useAuth();
   const location = useLocation();
+
+  // Логирование попытки доступа к защищенной странице
+  useEffect(() => {
+    logger.navigationInfo('Попытка доступа к защищенной странице', {
+      pathname: location.pathname,
+      requiredRoles,
+      requiredPermissions,
+      requireAllRoles,
+      userId: user?.id,
+      isAuthenticated,
+      userRoles: user?.roles || [],
+      userPermissions: user?.permissions || [],
+      sessionId: logger.getSessionId()
+    });
+  }, [location.pathname, requiredRoles, requiredPermissions, requireAllRoles, user, isAuthenticated]);
 
   // Показываем загрузку пока проверяем авторизацию
   if (isLoading) {
@@ -42,6 +58,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Если пользователь не аутентифицирован, перенаправляем на страницу входа
   if (!isAuthenticated || !user) {
+    logger.navigationInfo('Перенаправление на страницу входа - пользователь не аутентифицирован', {
+      pathname: location.pathname,
+      fallbackPath,
+      userId: user?.id,
+      isAuthenticated,
+      sessionId: logger.getSessionId()
+    });
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }
 
@@ -52,6 +75,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       : hasAnyRole(requiredRoles);
 
     if (!hasRequiredRoles) {
+      logger.navigationError('Отказ в доступе - недостаточно ролей', {
+        pathname: location.pathname,
+        requiredRoles,
+        userRoles: user.roles,
+        requireAllRoles,
+        userId: user.id,
+        sessionId: logger.getSessionId()
+      });
+      
       return (
         <Box
           display="flex"
@@ -106,6 +138,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Если все проверки пройдены, показываем содержимое
+  logger.navigationInfo('Успешный доступ к защищенной странице', {
+    pathname: location.pathname,
+    requiredRoles,
+    requiredPermissions,
+    userId: user.id,
+    userRoles: user.roles,
+    userPermissions: user.permissions,
+    sessionId: logger.getSessionId()
+  });
+  
   return <>{children}</>;
 };
 
