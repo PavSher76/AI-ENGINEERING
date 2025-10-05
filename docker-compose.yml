@@ -134,7 +134,7 @@ services:
   # Keycloak для SSO
   keycloak:
     image: quay.io/keycloak/keycloak:26.4.0
-    command: start-dev --http-enabled=true --hostname-strict=false --import-realm --http-port=8080 --hostname=localhost --hostname-port=8080
+    command: start-dev --http-enabled=true --hostname-strict=false --import-realm --http-port=8080 --hostname=localhost
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -418,7 +418,7 @@ services:
       - "3000:3000"
     environment:
       - REACT_APP_API_URL=https://localhost/api
-      - REACT_APP_KEYCLOAK_URL=http://localhost:8080
+      - REACT_APP_KEYCLOAK_URL=https://localhost/auth
       - REACT_APP_KEYCLOAK_REALM=ai-engineering
       - REACT_APP_KEYCLOAK_CLIENT_ID=ai-frontend
     depends_on:
