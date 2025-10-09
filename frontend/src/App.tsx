@@ -9,6 +9,9 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 // Keycloak
 import keycloak, { keycloakEventHandler } from './services/keycloak.ts';
 
+// Config
+import environment from './config/environment.ts';
+
 // Contexts
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import { ProjectProvider } from './contexts/ProjectContext.tsx';
@@ -77,11 +80,75 @@ const LoadingSpinner: React.FC<{ message?: string }> = ({ message = 'Загру�
 );
 
 function App() {
+  // Включаем Keycloak для полноценной авторизации
+  const enableKeycloak = environment.features.enableKeycloak;
+
+  if (!enableKeycloak) {
+    // Режим без Keycloak - прямая инициализация
+    return (
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <AuthProvider>
+            <ProjectProvider>
+              <Router>
+                <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/login" element={<Login />} />
+                    
+                    {/* Protected routes */}
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Layout />
+                      </ProtectedRoute>
+                    }>
+                      <Route index element={<Navigate to="/dashboard" replace />} />
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="chat" element={<Chat />} />
+                      <Route path="consultation" element={<Consultation />} />
+                      <Route path="archive" element={<Archive />} />
+                      <Route path="calculations" element={<Calculations />} />
+                      <Route path="validation" element={<Validation />} />
+                      <Route path="documents" element={<Documents />} />
+                      <Route path="analytics" element={<Analytics />} />
+                      <Route path="integration" element={<Integration />} />
+                      <Route path="outgoing-control" element={<OutgoingControl />} />
+                      <Route path="qr-validation" element={<QRValidation />} />
+                      <Route path="settings" element={
+                        <ProtectedRoute requiredRoles={['admin', 'developer']}>
+                          <Settings />
+                        </ProtectedRoute>
+                      } />
+                    </Route>
+                    
+                    {/* Catch all route */}
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </Box>
+              </Router>
+            </ProjectProvider>
+          </AuthProvider>
+        </ThemeProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <ReactKeycloakProvider
       authClient={keycloak}
       onEvent={keycloakEventHandler}
+      onTokens={(tokens) => {
+        console.log('Keycloak tokens:', tokens);
+      }}
       LoadingComponent={<LoadingSpinner message="Инициализация системы авторизации..." />}
+      initOptions={{
+        onLoad: 'check-sso',
+        silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+        checkLoginIframe: false,
+        enableLogging: true,
+      }}
     >
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>

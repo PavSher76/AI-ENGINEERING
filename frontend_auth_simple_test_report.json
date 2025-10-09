@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-10-09 22:55:17",
+  "test_type": "simple_frontend_auth_test",
+  "summary": {
+    "total_tests": 22,
+    "passed": 19,
+    "failed": 3,
+    "success_rate": "86.4%"
+  },
+  "errors": [
+    "TechExpert Connector connection error: ('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))"
+  ],
+  "recommendations": [
+    "Проверьте логи сервисов для выявления проблем",
+    "Убедитесь, что все контейнеры запущены: docker-compose ps",
+    "Проверьте конфигурацию SSL сертификатов"
+  ]
+}

@@ -14,10 +14,11 @@ const keycloak = new Keycloak(keycloakConfig);
 
 // Настройки инициализации
 const initOptions = {
-  onLoad: 'check-sso',
+  onLoad: 'login-required',
   silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
   checkLoginIframe: false,
   enableLogging: true,
+  pkceMethod: 'S256',
 };
 
 // Функция инициализации Keycloak

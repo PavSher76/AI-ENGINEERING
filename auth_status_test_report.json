@@ -1,0 +1,89 @@
+{
+  "timestamp": "2025-10-09 23:24:25",
+  "test_type": "auth_status_test",
+  "frontend_auth_config": {
+    "Keycloak Provider": false,
+    "Auth Context": false,
+    "Protected Routes": false,
+    "Login Component": false,
+    "Auth Utils": false
+  },
+  "environment_config": {
+    "Keycloak URL": false,
+    "Realm": false,
+    "Client ID": false
+  },
+  "protected_routes": {
+    "/dashboard": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/chat": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/consultation": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/archive": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/calculations": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/validation": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/documents": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/analytics": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/integration": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/outgoing-control": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/qr-validation": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    },
+    "/settings": {
+      "status_code": 200,
+      "redirect": "",
+      "content_length": 727
+    }
+  },
+  "keycloak_integration": false,
+  "auth_flow": true,
+  "recommendations": [
+    "Включите авторизацию в коде фронтенда",
+    "Проверьте импорты ReactKeycloakProvider и AuthContext",
+    "Настройте переменные окружения для Keycloak",
+    "Убедитесь, что REACT_APP_KEYCLOAK_URL, REACT_APP_KEYCLOAK_REALM, REACT_APP_KEYCLOAK_CLIENT_ID установлены",
+    "Проверьте настройки Keycloak",
+    "Убедитесь, что realm 'ai-engineering' и клиент 'ai-frontend' созданы",
+    "Большинство маршрутов доступны без авторизации - проверьте ProtectedRoute компоненты"
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "defaultClientScopes": ["web-origins", "profile", "roles", "email", "openid"]
+}
+

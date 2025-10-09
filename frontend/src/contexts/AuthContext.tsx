@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { useKeycloak } from '@react-keycloak/web';
 import { User } from '../types';
 import { keycloakUtils } from '../services/keycloak.ts';
+import environment from '../config/environment.ts';
 
 interface AuthContextType {
   user: User | null;
@@ -23,13 +24,19 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { keycloak, initialized } = useKeycloak();
+  // Проверяем, включен ли Keycloak
+  const enableKeycloak = environment.features.enableKeycloak;
+  
+  // Всегда вызываем useKeycloak, но используем результат только если Keycloak включен
+  const keycloakHook = useKeycloak();
+  const { keycloak, initialized } = enableKeycloak ? keycloakHook : { keycloak: null, initialized: true };
+  
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (initialized) {
-      if (keycloak.authenticated) {
+      if (enableKeycloak && keycloak?.authenticated) {
         // Извлекаем информацию о пользователе из токена Keycloak
         const userInfo = keycloakUtils.getUserInfo();
         if (userInfo) {
@@ -43,96 +50,125 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             permissions: userInfo.clientRoles,
           };
           setUser(userData);
-          console.log('Пользователь аутентифицирован:', userData);
+          console.log('Пользователь аутентифицирован через Keycloak:', userData);
         }
+      } else if (!enableKeycloak) {
+        // Режим без Keycloak - создаем тестового пользователя
+        const mockUser: User = {
+          id: 'mock-user-1',
+          username: 'testuser',
+          email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          roles: ['user', 'admin'],
+          permissions: ['read', 'write', 'admin'],
+        };
+        setUser(mockUser);
+        console.log('Режим без Keycloak - используется тестовый пользователь:', mockUser);
       } else {
-        // В режиме разработки не создаем мок-пользователя
-        // Пользователь должен пройти авторизацию через Keycloak
+        // Keycloak включен, но пользователь не аутентифицирован
         setUser(null);
         console.log('Пользователь не аутентифицирован, требуется авторизация через Keycloak');
       }
       setIsLoading(false);
     }
-  }, [keycloak, initialized]);
+  }, [keycloak, initialized, enableKeycloak]);
 
   const login = () => {
-    if (keycloak.authenticated) {
+    if (enableKeycloak && keycloak?.authenticated) {
       console.log('Пользователь уже аутентифицирован');
       return;
     }
-    keycloakUtils.login();
+    
+    if (enableKeycloak) {
+      keycloakUtils.login();
+    } else {
+      // В режиме без Keycloak просто устанавливаем тестового пользователя
+      const mockUser: User = {
+        id: 'mock-user-1',
+        username: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        roles: ['user', 'admin'],
+        permissions: ['read', 'write', 'admin'],
+      };
+      setUser(mockUser);
+      console.log('Вход в систему (режим без Keycloak):', mockUser);
+    }
   };
 
   const logout = () => {
-    if (keycloak.authenticated) {
+    if (enableKeycloak && keycloak?.authenticated) {
       keycloakUtils.logout();
     } else {
-      // В режиме разработки просто очищаем пользователя
+      // В режиме без Keycloak просто очищаем пользователя
       setUser(null);
-      console.log('Выход из системы (режим разработки)');
+      console.log('Выход из системы (режим без Keycloak)');
     }
   };
 
   const hasRole = (role: string): boolean => {
     if (!user) return false;
     
-    // Проверяем роль только если пользователь аутентифицирован через Keycloak
-    if (!keycloak.authenticated) {
-      return false;
+    if (enableKeycloak && keycloak?.authenticated) {
+      return keycloakUtils.hasRole(role);
+    } else {
+      // В режиме без Keycloak проверяем роли из mock пользователя
+      return user.roles.includes(role);
     }
-    
-    return keycloakUtils.hasRole(role);
   };
 
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     
-    // Проверяем права только если пользователь аутентифицирован через Keycloak
-    if (!keycloak.authenticated) {
-      return false;
+    if (enableKeycloak && keycloak?.authenticated) {
+      return user.permissions.includes(permission);
+    } else {
+      // В режиме без Keycloak проверяем права из mock пользователя
+      return user.permissions.includes(permission);
     }
-    
-    return user.permissions.includes(permission);
   };
 
   const hasAnyRole = (roles: string[]): boolean => {
     if (!user) return false;
     
-    // Проверяем роли только если пользователь аутентифицирован через Keycloak
-    if (!keycloak.authenticated) {
-      return false;
+    if (enableKeycloak && keycloak?.authenticated) {
+      return keycloakUtils.hasAnyRole(roles);
+    } else {
+      // В режиме без Keycloak проверяем роли из mock пользователя
+      return roles.some(role => user.roles.includes(role));
     }
-    
-    return keycloakUtils.hasAnyRole(roles);
   };
 
   const hasAllRoles = (roles: string[]): boolean => {
     if (!user) return false;
     
-    // Проверяем роли только если пользователь аутентифицирован через Keycloak
-    if (!keycloak.authenticated) {
-      return false;
+    if (enableKeycloak && keycloak?.authenticated) {
+      return keycloakUtils.hasAllRoles(roles);
+    } else {
+      // В режиме без Keycloak проверяем роли из mock пользователя
+      return roles.every(role => user.roles.includes(role));
     }
-    
-    return keycloakUtils.hasAllRoles(roles);
   };
 
   const updateToken = async (): Promise<boolean> => {
-    if (!keycloak.authenticated) {
-      return false;
-    }
-    
-    try {
-      return await keycloakUtils.updateToken();
-    } catch (error) {
-      console.error('Ошибка обновления токена:', error);
-      return false;
+    if (enableKeycloak && keycloak?.authenticated) {
+      try {
+        return await keycloakUtils.updateToken();
+      } catch (error) {
+        console.error('Ошибка обновления токена:', error);
+        return false;
+      }
+    } else {
+      // В режиме без Keycloak токен не нужно обновлять
+      return true;
     }
   };
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: keycloak.authenticated || false,
+    isAuthenticated: enableKeycloak ? (keycloak?.authenticated || false) : !!user,
     isLoading,
     login,
     logout,
