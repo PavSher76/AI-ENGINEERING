@@ -1,5 +1,5 @@
 """
-Модуль аутентификации для RAG сервиса
+Модуль аутентификации для RAG сервиса (ОТКЛЮЧЕН)
 """
 
 import logging
@@ -17,13 +17,16 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Настройки JWT
+# Настройки JWT (ОТКЛЮЧЕНЫ)
 SECRET_KEY = os.getenv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# HTTP Bearer схема
-security = HTTPBearer()
+# HTTP Bearer схема (опциональная)
+security = HTTPBearer(auto_error=False)
+
+# Флаг отключения авторизации
+AUTH_DISABLED = True
 
 class AuthService:
     """Сервис аутентификации"""
@@ -53,10 +56,20 @@ class AuthService:
             return None
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    """Получение текущего пользователя"""
+    """Получение текущего пользователя (ОТКЛЮЧЕНО)"""
+    
+    if AUTH_DISABLED:
+        # Возвращаем заглушку пользователя
+        return User(
+            id=1,
+            username="test_user",
+            email="test@example.com",
+            is_active=True
+        )
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Не удалось проверить учетные данные",

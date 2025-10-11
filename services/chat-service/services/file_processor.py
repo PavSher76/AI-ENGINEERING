@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Обработка PDF
 import PyPDF2
+import pdfplumber
 from pdf2image import convert_from_bytes
 import pytesseract
 
@@ -106,24 +107,36 @@ class FileProcessor:
             }
     
     async def _process_pdf(self, file_content: bytes, filename: str) -> Dict[str, Any]:
-        """Обрабатывает PDF файл"""
+        """Обрабатывает PDF файл с использованием pdfplumber для лучшего качества"""
         try:
-            # Сначала пытаемся извлечь текст напрямую
-            pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
             text_content = ""
             
-            for page_num, page in enumerate(pdf_reader.pages):
-                try:
-                    page_text = page.extract_text()
-                    if page_text.strip():
-                        text_content += f"\n--- Страница {page_num + 1} ---\n"
-                        text_content += page_text
-                except Exception as e:
-                    print(f"Ошибка извлечения текста со страницы {page_num + 1}: {e}")
+            # Сначала пытаемся извлечь текст с помощью pdfplumber
+            try:
+                with pdfplumber.open(io.BytesIO(file_content)) as pdf:
+                    for page_num, page in enumerate(pdf.pages):
+                        page_text = page.extract_text()
+                        if page_text:
+                            text_content += f"\n--- Страница {page_num + 1} ---\n"
+                            text_content += page_text
+            except Exception as pdfplumber_error:
+                logger.warning(f"pdfplumber не смог извлечь текст: {pdfplumber_error}, используем PyPDF2")
+                
+                # Fallback на PyPDF2
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+                
+                for page_num, page in enumerate(pdf_reader.pages):
+                    try:
+                        page_text = page.extract_text()
+                        if page_text.strip():
+                            text_content += f"\n--- Страница {page_num + 1} ---\n"
+                            text_content += page_text
+                    except Exception as e:
+                        logger.error(f"Ошибка извлечения текста со страницы {page_num + 1}: {e}")
             
             # Если текст не извлечен или мало текста, используем OCR
             if not text_content.strip() or len(text_content.strip()) < 100:
-                print("Применяем OCR для PDF...")
+                logger.info("Применяем OCR для PDF...")
                 ocr_text = await self._ocr_pdf(file_content)
                 if ocr_text:
                     text_content = ocr_text
@@ -142,6 +155,7 @@ class FileProcessor:
             
         except Exception as e:
             raise Exception(f"Ошибка обработки PDF: {str(e)}")
+    
     
     async def _ocr_pdf(self, file_content: bytes) -> str:
         """Применяет OCR к PDF файлу"""

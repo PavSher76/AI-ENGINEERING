@@ -3,8 +3,8 @@
 echo "🔐 Простой тест авторизации Frontend"
 echo "===================================="
 
-FRONTEND_URL="http://localhost:3000"
-KEYCLOAK_URL="http://localhost:8080"
+FRONTEND_URL="https://localhost:9300"
+KEYCLOAK_URL="https://localhost:9080"
 
 echo "⏳ Проверка доступности сервисов..."
 

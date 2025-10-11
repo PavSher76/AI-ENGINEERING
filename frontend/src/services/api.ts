@@ -17,8 +17,8 @@ const api: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config: AxiosRequestConfig) => {
-    // Добавляем токен авторизации если пользователь аутентифицирован
-    if (keycloak.authenticated && keycloak.token) {
+    // Добавляем токен авторизации если пользователь аутентифицирован и Keycloak включен
+    if (environment.features.enableKeycloak && keycloak.authenticated && keycloak.token) {
       config.headers = {
         ...config.headers,
         Authorization: `Bearer ${keycloak.token}`,
@@ -39,8 +39,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Обрабатываем ошибки авторизации
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Обрабатываем ошибки авторизации только если Keycloak включен
+    if (environment.features.enableKeycloak && error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -251,6 +251,157 @@ export class ReportService {
   static async downloadReport(reportId: string) {
     const response = await api.get(`/report/reports/${reportId}/download`, {
       responseType: 'blob',
+    });
+    return response.data;
+  }
+}
+
+// Создаем отдельный API клиент для Outgoing Control Service
+const outgoingControlApi: AxiosInstance = axios.create({
+  baseURL: 'http://localhost:9011',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor для Outgoing Control API
+outgoingControlApi.interceptors.request.use(
+  (config: AxiosRequestConfig) => {
+    // Добавляем токен авторизации если пользователь аутентифицирован и Keycloak включен
+    if (environment.features.enableKeycloak && keycloak.authenticated && keycloak.token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${keycloak.token}`,
+      };
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export class OutgoingControlService {
+  // Документы
+  static async getDocuments() {
+    const response = await outgoingControlApi.get('/documents/');
+    return response.data;
+  }
+
+  static async getDocument(documentId: string) {
+    const response = await outgoingControlApi.get(`/documents/${documentId}`);
+    return response.data;
+  }
+
+  static async createDocument(documentData: any) {
+    const response = await outgoingControlApi.post('/documents/', documentData);
+    return response.data;
+  }
+
+  static async updateDocument(documentId: string, documentData: any) {
+    const response = await outgoingControlApi.put(`/documents/${documentId}`, documentData);
+    return response.data;
+  }
+
+  static async uploadDocument(documentId: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await outgoingControlApi.post(`/documents/${documentId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  static async processDocument(documentId: string, processingRequest: any) {
+    const response = await outgoingControlApi.post(`/documents/${documentId}/process`, processingRequest);
+    return response.data;
+  }
+
+  // Проверки
+  static async spellCheck(text: string) {
+    const response = await outgoingControlApi.post('/spell-check', { text });
+    return response.data;
+  }
+
+  static async styleAnalysis(text: string) {
+    const response = await outgoingControlApi.post('/style-analysis', { text });
+    return response.data;
+  }
+
+  static async ethicsCheck(text: string) {
+    const response = await outgoingControlApi.post('/ethics-check', { text });
+    return response.data;
+  }
+
+  static async terminologyCheck(text: string) {
+    const response = await outgoingControlApi.post('/terminology-check', { text });
+    return response.data;
+  }
+
+  static async finalReview(documentId: string, reviewData: any) {
+    const response = await outgoingControlApi.post('/final-review', {
+      document_id: documentId,
+      ...reviewData
+    });
+    return response.data;
+  }
+
+  // Статистика
+  static async getStats() {
+    const response = await outgoingControlApi.get('/stats');
+    return response.data;
+  }
+
+  // Получение результатов проверок документа
+  static async getDocumentChecks(documentId: string) {
+    const response = await outgoingControlApi.get(`/documents/${documentId}/checks`);
+    return response.data;
+  }
+
+  // Удаление документа (установка статуса "deleted")
+  static async deleteDocument(documentId: string) {
+    const response = await outgoingControlApi.put(`/documents/${documentId}`, {
+      status: 'deleted'
+    });
+    return response.data;
+  }
+
+  // Проверка орфографии
+  static async checkSpelling(text: string, language: string = 'ru') {
+    const response = await outgoingControlApi.post('/spell-check', {
+      text,
+      language
+    });
+    return response.data;
+  }
+
+  // Анализ стиля
+  static async analyzeStyle(text: string, documentType: string) {
+    const response = await outgoingControlApi.post('/style-analysis', {
+      text,
+      document_type: documentType
+    });
+    return response.data;
+  }
+
+  // Проверка этики
+  static async checkEthics(text: string, context?: string) {
+    const response = await outgoingControlApi.post('/ethics-check', {
+      text,
+      context
+    });
+    return response.data;
+  }
+
+  // Проверка терминологии
+  static async checkTerminology(text: string, domain: string) {
+    const response = await outgoingControlApi.post('/terminology-check', {
+      text,
+      domain
     });
     return response.data;
   }

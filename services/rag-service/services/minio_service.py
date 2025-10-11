@@ -17,6 +17,7 @@ from pathlib import Path
 
 # Импорты для извлечения текста
 import PyPDF2
+import pdfplumber
 from docx import Document as DocxDocument
 import json
 
@@ -173,18 +174,34 @@ class MinIOService:
             return ""
     
     async def _extract_text_from_pdf(self, file_data: bytes) -> str:
-        """Извлечение текста из PDF"""
+        """Извлечение текста из PDF с использованием pdfplumber для лучшего качества"""
         try:
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
                 temp_file.write(file_data)
                 temp_file.flush()
                 
-                with open(temp_file.name, 'rb') as pdf_file:
-                    pdf_reader = PyPDF2.PdfReader(pdf_file)
-                    text = ""
+                text = ""
+                
+                # Используем pdfplumber для лучшего извлечения текста
+                try:
+                    with pdfplumber.open(temp_file.name) as pdf:
+                        for page_num, page in enumerate(pdf.pages):
+                            page_text = page.extract_text()
+                            if page_text:
+                                text += f"\n--- Страница {page_num + 1} ---\n"
+                                text += page_text
+                except Exception as pdfplumber_error:
+                    logger.warning(f"pdfplumber не смог извлечь текст: {pdfplumber_error}, используем PyPDF2")
                     
-                    for page in pdf_reader.pages:
-                        text += page.extract_text() + "\n"
+                    # Fallback на PyPDF2
+                    with open(temp_file.name, 'rb') as pdf_file:
+                        pdf_reader = PyPDF2.PdfReader(pdf_file)
+                        
+                        for page_num, page in enumerate(pdf_reader.pages):
+                            page_text = page.extract_text()
+                            if page_text:
+                                text += f"\n--- Страница {page_num + 1} ---\n"
+                                text += page_text
                 
                 # Удаление временного файла
                 os.unlink(temp_file.name)
@@ -194,6 +211,7 @@ class MinIOService:
         except Exception as e:
             logger.error(f"Ошибка извлечения текста из PDF: {e}")
             return ""
+    
     
     async def _extract_text_from_docx(self, file_data: bytes) -> str:
         """Извлечение текста из DOCX"""

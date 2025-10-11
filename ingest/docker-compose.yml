@@ -1,0 +1,215 @@
+version: '3.8'
+
+services:
+  # Meilisearch для BM25 поиска
+  meilisearch:
+    image: getmeili/meilisearch:v1.7
+    container_name: ai-engineering-meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_MASTER_KEY=masterKey
+      - MEILI_ENV=development
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_HTTP_ADDR=0.0.0.0:7700
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - ai-engineering
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO для хранения файлов
+  minio:
+    image: minio/minio:latest
+    container_name: ai-engineering-minio
+    ports:
+      - "9900:9000"
+      - "9901:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - ai-engineering
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Qdrant для векторного поиска
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ai-engineering-qdrant
+    ports:
+      - "9633:6333"
+      - "9634:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - ai-engineering
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RabbitMQ для очередей
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ai-engineering-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ai-engineering
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL для метаданных
+  postgres:
+    image: postgres:15
+    container_name: ai-engineering-postgres
+    ports:
+      - "9543:5432"
+    environment:
+      - POSTGRES_DB=ai_engineering
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ai-engineering
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ai_engineering"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis для кеширования
+  redis:
+    image: redis:7-alpine
+    container_name: ai-engineering-redis
+    ports:
+      - "9637:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ai-engineering
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Keycloak для аутентификации
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.0
+    container_name: ai-engineering-keycloak
+    ports:
+      - "9080:8080"
+      - "9082:8081"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/ai_engineering
+      - KC_DB_USERNAME=user
+      - KC_DB_PASSWORD=password
+      - KC_HOSTNAME_URL=http://localhost:9080
+      - KC_HTTP_ENABLED=true
+      - KC_HTTPS_ENABLED=false
+    command: start-dev
+    depends_on:
+      - postgres
+    networks:
+      - ai-engineering
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Archive Service (основной сервис)
+  archive-service:
+    build:
+      context: ../services/archive-service
+      dockerfile: Dockerfile
+    container_name: ai-engineering-archive-service
+    ports:
+      - "9015:8015"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - QDRANT_URL=http://qdrant:6333
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_API_KEY=masterKey
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - minio
+      - meilisearch
+      - rabbitmq
+    networks:
+      - ai-engineering
+    volumes:
+      - ./pipeline:/app/pipeline
+      - ./schemas:/app/schemas
+      - ./config:/app/config
+
+  # RAG Service для гибридного поиска
+  rag-service:
+    build:
+      context: ../services/rag-service
+      dockerfile: Dockerfile
+    container_name: ai-engineering-rag-service
+    ports:
+      - "9001:8001"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/ai_engineering
+      - REDIS_URL=redis://redis:6379
+      - QDRANT_URL=http://qdrant:6333
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_API_KEY=masterKey
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - meilisearch
+    networks:
+      - ai-engineering
+
+volumes:
+  meilisearch_data:
+  minio_data:
+  qdrant_data:
+  rabbitmq_data:
+  postgres_data:
+  redis_data:
+
+networks:
+  ai-engineering:
+    external: true

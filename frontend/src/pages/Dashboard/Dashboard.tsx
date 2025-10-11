@@ -18,129 +18,129 @@ const Dashboard: React.FC = () => {
   const serviceList: Omit<ServiceStatus, 'status' | 'lastCheck'>[] = [
     {
       name: 'Frontend',
-      url: 'https://localhost',
-      port: 443,
+      url: 'https://localhost:9300',
+      port: 9300,
       description: 'Веб-интерфейс системы'
     },
     {
       name: 'Nginx',
-      url: 'https://localhost',
-      port: 443,
+      url: 'http://localhost:9081',
+      port: 9081,
       description: 'Reverse proxy и статический сервер'
     },
     {
       name: 'Keycloak',
-      url: 'https://localhost:8080',
-      port: 8080,
+      url: 'https://localhost:9080',
+      port: 9080,
       description: 'Система авторизации'
     },
     {
       name: 'PostgreSQL',
-      url: 'https://localhost',
-      port: 5432,
+      url: 'https://localhost:9543',
+      port: 9543,
       description: 'Основная база данных'
     },
     {
       name: 'Redis',
-      url: 'https://localhost',
-      port: 6379,
+      url: 'https://localhost:9637',
+      port: 9637,
       description: 'Кэширование и сессии'
     },
     {
       name: 'Qdrant',
-      url: 'https://localhost:6333',
-      port: 6333,
+      url: 'https://localhost:9633',
+      port: 9633,
       description: 'Векторная база данных'
     },
     {
       name: 'MinIO',
-      url: 'https://localhost:9001',
-      port: 9001,
+      url: 'https://localhost:9900',
+      port: 9900,
       description: 'Файловое хранилище'
     },
     {
       name: 'RabbitMQ',
-      url: 'https://localhost:15672',
-      port: 15672,
+      url: 'https://localhost:9568',
+      port: 9568,
       description: 'Очереди сообщений'
     },
     {
-      name: 'Ollama',
-      url: 'https://localhost:11434',
-      port: 11434,
-      description: 'AI модели (локально)'
-    },
-    {
-      name: 'vLLM',
-      url: 'https://localhost:8002',
-      port: 8002,
-      description: 'Высокопроизводительный LLM сервер'
+      name: 'Ollama Service',
+      url: 'http://localhost:9012',
+      port: 9012,
+      description: 'AI модели сервис'
     },
     {
       name: 'RAG Service',
-      url: 'https://localhost/api/rag',
-      port: 443,
+      url: 'http://localhost:9001',
+      port: 9001,
       description: 'Сервис векторного поиска'
     },
     {
       name: 'Chat Service',
-      url: 'https://localhost/api/chat',
-      port: 443,
+      url: 'http://localhost:9003',
+      port: 9003,
       description: 'Сервис чата с ИИ'
     },
     {
       name: 'Consultation Service',
-      url: 'https://localhost/api/consultation',
-      port: 443,
+      url: 'http://localhost:9004',
+      port: 9004,
       description: 'Консультации по НТД'
     },
     {
       name: 'Archive Service',
-      url: 'https://localhost/api/archive',
-      port: 443,
+      url: 'http://localhost:9005',
+      port: 9005,
       description: 'Архив и объекты аналоги'
     },
     {
       name: 'Calculation Service',
-      url: 'https://localhost/api/calculation',
-      port: 443,
+      url: 'http://localhost:9006',
+      port: 9006,
       description: 'Инженерные расчеты'
     },
     {
       name: 'Validation Service',
-      url: 'https://localhost/api/validation',
-      port: 443,
+      url: 'http://localhost:9007',
+      port: 9007,
       description: 'Валидация данных'
     },
     {
       name: 'Document Service',
-      url: 'https://localhost/api/document',
-      port: 443,
+      url: 'http://localhost:9008',
+      port: 9008,
       description: 'Управление документами'
     },
     {
       name: 'Analytics Service',
-      url: 'https://localhost/api/analytics',
-      port: 443,
+      url: 'http://localhost:9009',
+      port: 9009,
       description: 'Аналитика проектов'
     },
     {
       name: 'Integration Service',
-      url: 'https://localhost/api/integration',
-      port: 443,
+      url: 'http://localhost:9010',
+      port: 9010,
       description: 'Интеграции с PLM'
     },
     {
       name: 'Outgoing Control Service',
-      url: 'https://localhost/api/outgoing-control',
-      port: 443,
+      url: 'http://localhost:9011',
+      port: 9011,
       description: 'Выходной контроль документов'
     },
     {
       name: 'QR Validation Service',
-      url: 'https://localhost/api/qr-validation',
-      port: 443,
+      url: 'http://localhost:9013',
+      port: 9013,
       description: 'Валидация QR кодов'
+    },
+    {
+      name: 'TechExpert Connector',
+      url: 'http://localhost:9014',
+      port: 9014,
+      description: 'Коннектор TechExpert'
     }
   ];
 
@@ -150,19 +150,17 @@ const Dashboard: React.FC = () => {
       let healthUrl = `${service.url}/health`;
       
       // Специальные случаи для сервисов, которые не имеют /health endpoint
-      if (service.name === 'Frontend' || service.name === 'Nginx') {
+      if (service.name === 'Frontend') {
         healthUrl = service.url;
       } else if (service.name === 'Keycloak') {
-        healthUrl = `${service.url}/realms/ai-engineering/.well-known/openid-configuration`;
-      } else if (service.name === 'PostgreSQL' || service.name === 'Redis') {
-        // Эти сервисы не имеют HTTP endpoints, помечаем как unknown
+        // Keycloak имеет проблемы с SSL, помечаем как warning
         return {
           ...service,
-          status: 'unknown',
+          status: 'warning',
           lastCheck: new Date().toLocaleTimeString()
         };
-      } else if (service.name === 'vLLM' || service.name === 'Ollama') {
-        // Эти сервисы могут быть не запущены, помечаем как unknown
+      } else if (service.name === 'PostgreSQL' || service.name === 'Redis' || service.name === 'Qdrant' || service.name === 'MinIO' || service.name === 'RabbitMQ' || service.name === 'Nginx' || service.name === 'TechExpert Connector') {
+        // Эти сервисы не имеют HTTP endpoints или имеют CORS проблемы, помечаем как unknown
         return {
           ...service,
           status: 'unknown',
@@ -195,8 +193,10 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.warn(`Failed to check ${service.name}:`, error);
       
-      // Для сервисов с CORS проблемами помечаем как warning вместо error
-      if (service.name === 'MinIO' || service.name === 'RabbitMQ' || service.name === 'Qdrant') {
+      // Для сервисов с CORS проблемами или недоступных помечаем как warning
+      if (service.name === 'MinIO' || service.name === 'RabbitMQ' || service.name === 'Qdrant' || 
+          service.name === 'PostgreSQL' || service.name === 'Redis' || service.name === 'Keycloak' ||
+          service.name === 'TechExpert Connector') {
         return {
           ...service,
           status: 'warning',
@@ -204,6 +204,7 @@ const Dashboard: React.FC = () => {
         };
       }
       
+      // Для основных сервисов помечаем как error
       return {
         ...service,
         status: 'error',

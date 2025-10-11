@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Canonical Payload Schema for Archive Service",
+  "description": "Стандартная схема payload для всех типов документов в системе",
+  "type": "object",
+  "required": [
+    "project_id",
+    "object_id", 
+    "spp_id",
+    "discipline",
+    "doc_no",
+    "rev",
+    "language",
+    "source_path",
+    "source_hash",
+    "issued_at",
+    "confidentiality"
+  ],
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Идентификатор проекта",
+      "pattern": "^[A-Z0-9-]+$",
+      "examples": ["EC-Karat-2021", "AI-ENG-2024"]
+    },
+    "object_id": {
+      "type": "string", 
+      "description": "Идентификатор объекта/установки",
+      "pattern": "^[A-Z0-9-]+$",
+      "examples": ["NH3-ATR-3500tpd", "REACTOR-001"]
+    },
+    "spp_id": {
+      "type": "string",
+      "description": "Идентификатор СПП (Система Проектной Подготовки)",
+      "pattern": "^[0-9]{10}$",
+      "examples": ["0000000000", "1234567890"]
+    },
+    "discipline": {
+      "type": "string",
+      "enum": ["process", "piping", "civil", "elec", "instr", "hvac", "procurement"],
+      "description": "Инженерная дисциплина"
+    },
+    "doc_no": {
+      "type": "string",
+      "description": "Номер документа",
+      "pattern": "^[A-Z0-9-]+$",
+      "examples": ["AI-ENG-PID-001", "EC-KARAT-SPEC-100"]
+    },
+    "rev": {
+      "type": "string",
+      "description": "Ревизия документа",
+      "pattern": "^[A-Z0-9]+$",
+      "examples": ["A", "B", "01", "02"]
+    },
+    "page": {
+      "type": ["integer", "null"],
+      "description": "Номер страницы (для чанков)",
+      "minimum": 1
+    },
+    "section": {
+      "type": ["string", "null"],
+      "description": "Раздел документа",
+      "examples": ["General", "Equipment List", "Piping", "Instrumentation"]
+    },
+    "language": {
+      "type": "string",
+      "enum": ["ru", "en", "de", "fr"],
+      "description": "Язык документа"
+    },
+    "source_path": {
+      "type": "string",
+      "description": "Путь к исходному файлу в MinIO",
+      "pattern": "^archives/[^/]+/.*$",
+      "examples": ["archives/EC-Karat-2021/01_process/AI-ENG-PID-001-A.pdf"]
+    },
+    "source_hash": {
+      "type": "string",
+      "description": "SHA-256 хеш исходного файла",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Дата выпуска документа"
+    },
+    "vendor": {
+      "type": ["string", "null"],
+      "description": "Поставщик/изготовитель",
+      "examples": ["Linde", "Air Liquide", "Technip"]
+    },
+    "confidentiality": {
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "secret"],
+      "description": "Уровень конфиденциальности"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Теги для категоризации",
+      "examples": [["equipment", "pump", "centrifugal"], ["safety", "emergency"]]
+    },
+    "numeric": {
+      "type": "object",
+      "description": "Числовые параметры оборудования",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "range": {
+            "type": "object",
+            "properties": {
+              "min": {"type": "number"},
+              "max": {"type": "number"}
+            }
+          }
+        }
+      },
+      "examples": [
+        {
+          "flow_rate": {"value": 1000, "unit": "m3/h"},
+          "pressure": {"value": 25, "unit": "bar"},
+          "temperature": {"range": {"min": -40, "max": 200}, "unit": "°C"}
+        }
+      ]
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {"type": "string"},
+          "actions": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["read", "write", "delete"]}
+          }
+        }
+      },
+      "description": "Права доступа к документу"
+    }
+  },
+  "additionalProperties": false
+}

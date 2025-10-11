@@ -140,15 +140,15 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_PROFILE: dev
       QUARKUS_PROFILE: dev
-      KC_HTTP_ENABLED: false
-      KC_HTTPS_ENABLED: true
-      KC_HTTPS_PORT: 8080
+      KC_HTTP_ENABLED: true
+      KC_HTTPS_ENABLED: false
+      KC_HTTPS_PORT: 9080
       KC_HTTP_PORT: 8081
       KC_HOSTNAME_STRICT: false
       KC_PROXY: none
-      KC_HOSTNAME_URL: https://localhost:9443
-      KC_HOSTNAME_ADMIN_URL: https://localhost:9443
-      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_URL: https://localhost:9080
+      KC_HOSTNAME_ADMIN_URL: https://localhost:9080
+      KC_HOSTNAME_PORT: 9080
       KC_HTTP_RELATIVE_PATH: /
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_PROXY_HEADERS: xforwarded
@@ -159,6 +159,7 @@ services:
       KC_DB_PASSWORD: keycloak
     ports:
       - "9080:8080"
+      - "9082:8081"
     volumes:
       - ./keycloak/ai-engineering-realm.json:/opt/keycloak/data/import/ai-engineering-realm.json:ro
       - ./ssl/localhost.key:/opt/keycloak/conf/localhost.key:ro
@@ -251,19 +252,23 @@ services:
       context: ./services/archive-service
       dockerfile: Dockerfile
     ports:
-      - "9005:8005"
+      - "9015:8015"
     environment:
       - DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_engineering
       - REDIS_URL=redis://redis:6379
+      - QDRANT_URL=http://qdrant:6333
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin123
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_SECURE=false
     depends_on:
       - postgres
       - redis
+      - qdrant
       - minio
     volumes:
       - ./services/archive-service:/app
+      - /tmp/archive_processing:/tmp/archive_processing
     networks:
       - ai-network
 
@@ -425,9 +430,10 @@ services:
       - "9300:3000"
     environment:
       - REACT_APP_API_URL=https://localhost/api
-      - REACT_APP_KEYCLOAK_URL=https://localhost/auth
+      - REACT_APP_KEYCLOAK_URL=http://localhost:9082
       - REACT_APP_KEYCLOAK_REALM=ai-engineering
       - REACT_APP_KEYCLOAK_CLIENT_ID=ai-frontend
+      - REACT_APP_ENABLE_KEYCLOAK=false
     depends_on:
       - keycloak
     volumes:

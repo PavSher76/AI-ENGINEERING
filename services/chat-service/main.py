@@ -63,13 +63,8 @@ async def lifespan(app: FastAPI):
     logger.info("📄 Экспорт в DOCX/PDF с кириллицей")
     logger.info("🔐 Интеграция с Keycloak для авторизации")
     
-    # Инициализация Keycloak
-    try:
-        await keycloak_auth.initialize()
-        logger.info("✅ Keycloak авторизация инициализирована")
-    except Exception as e:
-        logger.warning(f"⚠️ Ошибка инициализации Keycloak: {e}")
-        logger.warning("Продолжаем в режиме разработки без авторизации")
+    # Инициализация Keycloak (ОТКЛЮЧЕНА)
+    logger.info("🔓 Авторизация отключена - работаем без Keycloak")
     
     yield
     # Shutdown
@@ -111,11 +106,13 @@ async def log_requests(request: Request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:80",
+        "https://localhost:9300",
+        "http://localhost:9300",
+        "https://localhost",
         "http://localhost",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:80",
+        "https://127.0.0.1:9300",
+        "http://127.0.0.1:9300",
+        "https://127.0.0.1",
         "http://127.0.0.1",
         "*"  # Разрешаем все origins для разработки
     ],

@@ -1,18 +1,23 @@
 {
-  "timestamp": "2025-10-09 22:55:17",
+  "timestamp": "2025-10-10 18:21:02",
   "test_type": "simple_frontend_auth_test",
   "summary": {
     "total_tests": 22,
-    "passed": 19,
-    "failed": 3,
-    "success_rate": "86.4%"
+    "passed": 16,
+    "failed": 6,
+    "success_rate": "72.7%"
   },
   "errors": [
-    "TechExpert Connector connection error: ('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))"
+    "Keycloak connection error: HTTPSConnectionPool(host='localhost', port=9080): Max retries exceeded with url: /realms/ai-engineering (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)')))",
+    "TechExpert Connector connection error: ('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+    "Keycloak config error: HTTPSConnectionPool(host='localhost', port=9080): Max retries exceeded with url: /realms/ai-engineering (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)')))",
+    "SSL certificate error: HTTPSConnectionPool(host='localhost', port=9080): Max retries exceeded with url: /realms/ai-engineering (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)')))"
   ],
   "recommendations": [
     "Проверьте логи сервисов для выявления проблем",
     "Убедитесь, что все контейнеры запущены: docker-compose ps",
-    "Проверьте конфигурацию SSL сертификатов"
+    "Проверьте конфигурацию SSL сертификатов",
+    "Проверьте настройки Keycloak в docker-compose.yml",
+    "Убедитесь, что realm 'ai-engineering' импортирован корректно"
   ]
 }

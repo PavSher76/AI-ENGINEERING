@@ -34,6 +34,7 @@ import Integration from './pages/Integration/Integration.tsx';
 import OutgoingControl from './pages/OutgoingControl/OutgoingControl.tsx';
 import QRValidation from './pages/QRValidation/QRValidation.tsx';
 import Settings from './pages/Settings/Settings.tsx';
+import OIDCDebug from './pages/Debug/OIDCDebug.tsx';
 
 import './App.css';
 
@@ -120,6 +121,7 @@ function App() {
                           <Settings />
                         </ProtectedRoute>
                       } />
+                      <Route path="debug/oidc" element={<OIDCDebug />} />
                     </Route>
                     
                     {/* Catch all route */}
@@ -184,6 +186,7 @@ function App() {
                           <Settings />
                         </ProtectedRoute>
                       } />
+                      <Route path="debug/oidc" element={<OIDCDebug />} />
                     </Route>
                     
                     {/* Catch all route */}

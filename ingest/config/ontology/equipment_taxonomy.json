@@ -1,0 +1,191 @@
+{
+  "version": "1.0.0",
+  "description": "Таксономия оборудования для поиска аналогов",
+  "categories": {
+    "pumps": {
+      "name": "Насосы",
+      "description": "Насосное оборудование",
+      "subcategories": {
+        "centrifugal": {
+          "name": "Центробежные насосы",
+          "standards": ["API 610", "ISO 2858", "DIN EN 733"],
+          "parameters": {
+            "flow_rate": {"unit": "m3/h", "range": [0.1, 10000]},
+            "head": {"unit": "m", "range": [1, 500]},
+            "power": {"unit": "kW", "range": [0.1, 5000]},
+            "efficiency": {"unit": "%", "range": [20, 95]},
+            "npsh_required": {"unit": "m", "range": [0.5, 20]}
+          },
+          "materials": ["cast_iron", "stainless_steel", "duplex", "super_duplex", "titanium"],
+          "keywords": ["центробежный", "centrifugal", "насос", "pump", "impeller"]
+        },
+        "positive_displacement": {
+          "name": "Объемные насосы",
+          "standards": ["API 676", "ISO 15136"],
+          "parameters": {
+            "flow_rate": {"unit": "m3/h", "range": [0.01, 1000]},
+            "pressure": {"unit": "bar", "range": [1, 1000]},
+            "power": {"unit": "kW", "range": [0.1, 1000]}
+          },
+          "materials": ["cast_iron", "stainless_steel", "carbon_steel"],
+          "keywords": ["объемный", "positive displacement", "поршневой", "piston", "шестеренчатый", "gear"]
+        }
+      }
+    },
+    "heat_exchangers": {
+      "name": "Теплообменники",
+      "description": "Теплообменное оборудование",
+      "subcategories": {
+        "shell_and_tube": {
+          "name": "Кожухотрубные теплообменники",
+          "standards": ["TEMA", "API 660", "ASME VIII"],
+          "parameters": {
+            "heat_duty": {"unit": "kW", "range": [1, 100000]},
+            "surface_area": {"unit": "m2", "range": [1, 10000]},
+            "pressure": {"unit": "bar", "range": [1, 100]},
+            "temperature": {"unit": "°C", "range": [-50, 500]}
+          },
+          "materials": ["carbon_steel", "stainless_steel", "titanium", "nickel_alloy"],
+          "keywords": ["кожухотрубный", "shell and tube", "теплообменник", "heat exchanger", "TEMA"]
+        },
+        "plate": {
+          "name": "Пластинчатые теплообменники",
+          "standards": ["EN 12952", "ASME VIII"],
+          "parameters": {
+            "heat_duty": {"unit": "kW", "range": [1, 50000]},
+            "surface_area": {"unit": "m2", "range": [1, 5000]},
+            "pressure": {"unit": "bar", "range": [1, 25]},
+            "temperature": {"unit": "°C", "range": [-30, 180]}
+          },
+          "materials": ["stainless_steel", "titanium", "nickel_alloy"],
+          "keywords": ["пластинчатый", "plate", "теплообменник", "heat exchanger", "gasket"]
+        }
+      }
+    },
+    "vessels": {
+      "name": "Сосуды и аппараты",
+      "description": "Сосуды под давлением и технологические аппараты",
+      "subcategories": {
+        "pressure_vessels": {
+          "name": "Сосуды под давлением",
+          "standards": ["ASME VIII", "PED", "GOST 14249"],
+          "parameters": {
+            "volume": {"unit": "m3", "range": [0.1, 10000]},
+            "pressure": {"unit": "bar", "range": [1, 1000]},
+            "temperature": {"unit": "°C", "range": [-50, 600]},
+            "diameter": {"unit": "mm", "range": [100, 10000]}
+          },
+          "materials": ["carbon_steel", "stainless_steel", "low_alloy_steel"],
+          "keywords": ["сосуд", "vessel", "давление", "pressure", "ASME", "PED"]
+        },
+        "storage_tanks": {
+          "name": "Резервуары",
+          "standards": ["API 650", "API 620", "EN 14015"],
+          "parameters": {
+            "volume": {"unit": "m3", "range": [1, 100000]},
+            "diameter": {"unit": "mm", "range": [1000, 50000]},
+            "height": {"unit": "mm", "range": [1000, 30000]}
+          },
+          "materials": ["carbon_steel", "stainless_steel"],
+          "keywords": ["резервуар", "tank", "storage", "хранение", "API 650"]
+        }
+      }
+    },
+    "compressors": {
+      "name": "Компрессоры",
+      "description": "Компрессорное оборудование",
+      "subcategories": {
+        "centrifugal": {
+          "name": "Центробежные компрессоры",
+          "standards": ["API 617", "ISO 5389"],
+          "parameters": {
+            "flow_rate": {"unit": "m3/h", "range": [100, 1000000]},
+            "pressure_ratio": {"unit": "", "range": [1.1, 50]},
+            "power": {"unit": "kW", "range": [100, 100000]},
+            "speed": {"unit": "rpm", "range": [1000, 30000]}
+          },
+          "materials": ["carbon_steel", "stainless_steel", "titanium"],
+          "keywords": ["центробежный", "centrifugal", "компрессор", "compressor", "API 617"]
+        },
+        "reciprocating": {
+          "name": "Поршневые компрессоры",
+          "standards": ["API 618", "ISO 13631"],
+          "parameters": {
+            "flow_rate": {"unit": "m3/h", "range": [1, 10000]},
+            "pressure": {"unit": "bar", "range": [1, 1000]},
+            "power": {"unit": "kW", "range": [10, 10000]}
+          },
+          "materials": ["carbon_steel", "cast_iron", "stainless_steel"],
+          "keywords": ["поршневой", "reciprocating", "компрессор", "compressor", "API 618"]
+        }
+      }
+    },
+    "valves": {
+      "name": "Арматура",
+      "description": "Трубопроводная арматура",
+      "subcategories": {
+        "gate": {
+          "name": "Задвижки",
+          "standards": ["API 600", "API 602", "EN 593"],
+          "parameters": {
+            "diameter": {"unit": "mm", "range": [15, 2000]},
+            "pressure": {"unit": "bar", "range": [1, 420]},
+            "temperature": {"unit": "°C", "range": [-50, 600]}
+          },
+          "materials": ["carbon_steel", "stainless_steel", "cast_iron"],
+          "keywords": ["задвижка", "gate valve", "арматура", "valve", "API 600"]
+        },
+        "ball": {
+          "name": "Шаровые краны",
+          "standards": ["API 6D", "ISO 14313"],
+          "parameters": {
+            "diameter": {"unit": "mm", "range": [15, 1200]},
+            "pressure": {"unit": "bar", "range": [1, 420]},
+            "temperature": {"unit": "°C", "range": [-50, 200]}
+          },
+          "materials": ["carbon_steel", "stainless_steel", "bronze"],
+          "keywords": ["шаровой", "ball valve", "кран", "valve", "API 6D"]
+        }
+      }
+    }
+  },
+  "materials": {
+    "carbon_steel": {
+      "name": "Углеродистая сталь",
+      "grades": ["A106", "A53", "A333", "20", "St37"],
+      "properties": {
+        "density": {"value": 7850, "unit": "kg/m3"},
+        "tensile_strength": {"value": 400, "unit": "MPa"},
+        "yield_strength": {"value": 250, "unit": "MPa"}
+      }
+    },
+    "stainless_steel": {
+      "name": "Нержавеющая сталь",
+      "grades": ["304", "316", "316L", "321", "347"],
+      "properties": {
+        "density": {"value": 8000, "unit": "kg/m3"},
+        "tensile_strength": {"value": 515, "unit": "MPa"},
+        "yield_strength": {"value": 205, "unit": "MPa"}
+      }
+    },
+    "duplex": {
+      "name": "Дуплексная сталь",
+      "grades": ["2205", "2507", "LDX 2101"],
+      "properties": {
+        "density": {"value": 7800, "unit": "kg/m3"},
+        "tensile_strength": {"value": 620, "unit": "MPa"},
+        "yield_strength": {"value": 450, "unit": "MPa"}
+      }
+    }
+  },
+  "units": {
+    "pressure": ["bar", "MPa", "psi", "kPa", "Pa"],
+    "temperature": ["°C", "°F", "K"],
+    "flow_rate": ["m3/h", "l/min", "gpm", "cfm"],
+    "power": ["kW", "MW", "hp", "W"],
+    "length": ["mm", "m", "in", "ft"],
+    "area": ["m2", "mm2", "in2", "ft2"],
+    "volume": ["m3", "l", "gal", "ft3"],
+    "mass": ["kg", "t", "lb", "g"]
+  }
+}

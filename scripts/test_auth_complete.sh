@@ -3,8 +3,8 @@
 echo "🔐 Полный тест системы авторизации"
 echo "=================================="
 
-FRONTEND_URL="http://localhost:3000"
-KEYCLOAK_URL="http://localhost:8080"
+FRONTEND_URL="https://localhost:9300"
+KEYCLOAK_URL="https://localhost:9080"
 REALM_NAME="ai-engineering"
 CLIENT_ID="ai-frontend"
 

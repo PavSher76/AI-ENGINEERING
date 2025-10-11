@@ -1,5 +1,5 @@
 """
-Сервис аутентификации через Keycloak
+Сервис аутентификации через Keycloak (ОТКЛЮЧЕН)
 """
 
 import logging
@@ -13,14 +13,17 @@ import base64
 
 logger = logging.getLogger(__name__)
 
-# Настройки Keycloak
+# Настройки Keycloak (ОТКЛЮЧЕНЫ)
 KEYCLOAK_URL = "http://keycloak:8080"
 KEYCLOAK_REALM = "ai-engineering"
 KEYCLOAK_CLIENT_ID = "ai-backend"
 KEYCLOAK_CLIENT_SECRET = "ai-backend-secret"  # В production использовать переменную окружения
 
-# HTTP Bearer схема
-security = HTTPBearer()
+# HTTP Bearer схема (опциональная)
+security = HTTPBearer(auto_error=False)
+
+# Флаг отключения авторизации
+AUTH_DISABLED = True
 
 class KeycloakAuthService:
     """Сервис аутентификации через Keycloak"""
@@ -196,9 +199,18 @@ class KeycloakAuthService:
 keycloak_auth = KeycloakAuthService()
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ) -> Dict[str, Any]:
-    """Получение текущего пользователя из токена"""
+    """Получение текущего пользователя из токена (ОТКЛЮЧЕНО)"""
+    
+    if AUTH_DISABLED:
+        # Возвращаем заглушку пользователя
+        return {
+            "username": "test_user",
+            "email": "test@example.com",
+            "roles": ["admin", "user"],
+            "client_roles": ["admin", "user"]
+        }
     
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

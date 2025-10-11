@@ -14,9 +14,15 @@ pytest-asyncio==0.21.1
 
 # Документооборот
 pypdf2==3.0.1
+pdfplumber==0.10.3
 python-docx==1.1.0
 python-multipart==0.0.6
 aiofiles==23.2.1
+
+# OCR для PDF
+pytesseract==0.3.10
+Pillow==10.1.0
+pdf2image==1.16.3
 
 # Spell checking
 language-tool-python==2.7.1

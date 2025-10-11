@@ -65,9 +65,9 @@
 - `POST /export/pdf` - Экспорт в PDF
 
 ### Доступ:
-- **URL**: https://localhost:8003
-- **Frontend**: https://localhost/chat
-- **Swagger UI**: https://localhost:8003/docs
+- **URL**: https://localhost:9003
+- **Frontend**: https://localhost:9300/chat
+- **Swagger UI**: https://localhost:9003/docs
 
 ## 🔍 Улучшенная RAG-система для НТД
 
@@ -101,9 +101,9 @@
 - `POST /sync/trigger` - запуск синхронизации
 
 ### Доступ:
-- **URL**: https://localhost:8014
-- **Health Check**: https://localhost:8014/health
-- **API Docs**: https://localhost:8014/docs
+- **URL**: https://localhost:9014
+- **Health Check**: https://localhost:9014/health
+- **API Docs**: https://localhost:9014/docs
 - **OpenAPI Spec**: [schemas/techexpert_connector_openapi.yaml](schemas/techexpert_connector_openapi.yaml)
 
 ### Тестирование:
@@ -129,8 +129,8 @@
 - `GET /api/outgoing-control/stats` - Статистика сервиса
 
 ### Доступ:
-- **Прямой доступ:** https://localhost:8011
-- **API документация:** https://localhost:8011/docs
+- **Прямой доступ:** https://localhost:9011
+- **API документация:** https://localhost:9011/docs
 - **Через Nginx:** https://localhost/api/outgoing-control/
 
 ## 🆕 Новый модуль: QR валидация РД
@@ -164,8 +164,8 @@
 - `GET /api/qr-validation/qr/download/{id}` - Скачивание QR-кода
 
 ### Доступ:
-- **Прямой доступ:** https://localhost:8013
-- **API документация:** https://localhost:8013/docs
+- **Прямой доступ:** https://localhost:9013
+- **API документация:** https://localhost:9013/docs
 - **Через Nginx:** https://localhost/api/qr-validation/
 - **Веб-интерфейс:** https://localhost/qr-validation
 
@@ -195,8 +195,8 @@
 
 ### Доступные HTTPS URL:
 - **Frontend**: https://localhost
-- **Keycloak Admin**: https://localhost:8080/admin
-- **Keycloak Realm**: https://localhost:8080/realms/ai-engineering
+- **Keycloak Admin**: https://localhost:9080/admin
+- **Keycloak Realm**: https://localhost:9080/realms/ai-engineering
 - **API Endpoints**: https://localhost/api/*
 
 ### ⚠️ Важно для разработки:
@@ -340,28 +340,28 @@ AI-Engineering/
 - **Keycloak:** ✅ SSO аутентификация с HTTPS (порт 8080)
 
 **Микросервисы:**
-- **RAG Service:** ✅ https://localhost:8001
-- **💬 Chat Service (Расширенный):** ✅ https://localhost:8003 - Чат с ИИ с файлами, OCR, настройками
-- **Consultation Service:** ✅ https://localhost:8004
-- **Archive Service:** ✅ https://localhost:8005
-- **Calculation Service:** ✅ https://localhost:8006
-- **Validation Service:** ✅ https://localhost:8007
-- **Document Service:** ✅ https://localhost:8008
-- **Analytics Service:** ✅ https://localhost:8009
-- **Integration Service:** ✅ https://localhost:8010
-- **🆕 Outgoing Control Service:** ✅ https://localhost:8011
-- **🆕 Ollama Management Service:** ✅ https://localhost:8012
-- **🆕 QR валидация РД:** ✅ https://localhost:8013
-- **🔍 TechExpert Connector:** ✅ https://localhost:8014 - RAG-система для НТД с интеграцией API "Техэксперт"
+- **RAG Service:** ✅ https://localhost:9001
+- **💬 Chat Service (Расширенный):** ✅ https://localhost:9003 - Чат с ИИ с файлами, OCR, настройками
+- **Consultation Service:** ✅ https://localhost:9004
+- **Archive Service:** ✅ https://localhost:9005
+- **Calculation Service:** ✅ https://localhost:9006
+- **Validation Service:** ✅ https://localhost:9007
+- **Document Service:** ✅ https://localhost:9008
+- **Analytics Service:** ✅ https://localhost:9009
+- **Integration Service:** ✅ https://localhost:9010
+- **🆕 Outgoing Control Service:** ✅ https://localhost:9011
+- **🆕 Ollama Management Service:** ✅ https://localhost:9012
+- **🆕 QR валидация РД:** ✅ https://localhost:9013
+- **🔍 TechExpert Connector:** ✅ https://localhost:9014 - RAG-система для НТД с интеграцией API "Техэксперт"
 
 ### Доступные интерфейсы:
 - **🆕 Веб-интерфейс:** https://localhost (React фронтенд с SSL)
 - **Основной интерфейс:** https://localhost (Nginx с HTTPS)
-- **API документация:** https://localhost:8003/docs (Chat Service)
-- **🆕 Outgoing Control API:** https://localhost:8011/docs
+- **API документация:** https://localhost:9003/docs (Chat Service)
+- **🆕 Outgoing Control API:** https://localhost:9011/docs
 - **🆕 vLLM API:** https://localhost:8002/docs
-- **🆕 Ollama Management API:** https://localhost:8012/docs
-- **🔐 Keycloak Admin:** https://localhost:8080/admin
+- **🆕 Ollama Management API:** https://localhost:9012/docs
+- **🔐 Keycloak Admin:** https://localhost:9080/admin
 - **RabbitMQ Management:** http://localhost:15672
 - **MinIO Console:** http://localhost:9001
 
@@ -371,7 +371,7 @@ AI-Engineering/
 
 ```bash
 # 1. Создание документа
-curl -k -X POST "https://localhost:8011/documents/" \
+curl -k -X POST "https://localhost:9011/documents/" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Деловое письмо клиенту",
@@ -379,11 +379,11 @@ curl -k -X POST "https://localhost:8011/documents/" \
   }'
 
 # 2. Загрузка файла
-curl -k -X POST "https://localhost:8011/documents/{document_id}/upload" \
+curl -k -X POST "https://localhost:9011/documents/{document_id}/upload" \
   -F "file=@business_letter.pdf"
 
 # 3. Полная обработка документа
-curl -k -X POST "https://localhost:8011/documents/{document_id}/process" \
+curl -k -X POST "https://localhost:9011/documents/{document_id}/process" \
   -H "Content-Type: application/json" \
   -d '{
     "checks_to_perform": [
@@ -395,7 +395,7 @@ curl -k -X POST "https://localhost:8011/documents/{document_id}/process" \
   }'
 
 # 4. Финальная проверка с LLM
-curl -k -X POST "https://localhost:8011/final-review" \
+curl -k -X POST "https://localhost:9011/final-review" \
   -H "Content-Type: application/json" \
   -d '{
     "document_id": "uuid-here",
@@ -494,13 +494,13 @@ curl -k -X POST "https://localhost:8011/final-review" \
 
 ```bash
 # Проверка статуса Ollama
-curl -k https://localhost:8012/status
+curl -k https://localhost:9012/status
 
 # Получение списка доступных моделей
-curl -k https://localhost:8012/models
+curl -k https://localhost:9012/models
 
 # Тестирование генерации текста
-curl -k -X POST "https://localhost:8012/models/llama3.1:8b/generate" \
+curl -k -X POST "https://localhost:9012/models/llama3.1:8b/generate" \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Привет! Как дела?", "max_tokens": 50}'
 ```

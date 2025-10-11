@@ -8,6 +8,10 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libpq-dev \
     curl \
+    tesseract-ocr \
+    tesseract-ocr-rus \
+    tesseract-ocr-eng \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Копирование requirements

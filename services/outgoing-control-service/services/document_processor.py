@@ -6,9 +6,21 @@ import os
 import aiofiles
 from typing import Optional, Dict, Any
 import PyPDF2
+import pdfplumber
 from docx import Document as DocxDocument
 import io
 import logging
+import tempfile
+
+# OCR imports
+try:
+    from pdf2image import convert_from_bytes
+    import pytesseract
+    from PIL import Image
+    OCR_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"OCR библиотеки не установлены: {e}")
+    OCR_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -49,35 +61,151 @@ class DocumentProcessor:
             raise
     
     async def _extract_from_pdf(self, file_path: str) -> Dict[str, Any]:
-        """Извлекает текст из PDF файла"""
+        """Извлекает текст из PDF файла с использованием pdfplumber, PyPDF2 и OCR fallback"""
+        text = ""
+        tables = []
+        page_count = 0
+        extraction_method = "unknown"
+        
         try:
-            text = ""
-            tables = []
+            # Метод 1: Используем pdfplumber для лучшего извлечения текста
+            try:
+                with pdfplumber.open(file_path) as pdf:
+                    page_count = len(pdf.pages)
+                    
+                    for page_num, page in enumerate(pdf.pages):
+                        # Извлекаем текст страницы
+                        page_text = page.extract_text()
+                        
+                        if page_text:
+                            text += f"\n--- Страница {page_num + 1} ---\n"
+                            text += page_text
+                        
+                        # Извлекаем таблицы
+                        page_tables = page.extract_tables()
+                        if page_tables:
+                            for table_num, table in enumerate(page_tables):
+                                table_data = {
+                                    "page": page_num + 1,
+                                    "table": table_num + 1,
+                                    "data": table
+                                }
+                                tables.append(table_data)
+                
+                if text.strip():
+                    extraction_method = "pdfplumber"
+                    logger.info(f"Успешно извлечен текст из {file_path} с помощью pdfplumber")
+                    return {
+                        "text": text.strip(),
+                        "tables": tables,
+                        "page_count": page_count,
+                        "extraction_method": extraction_method
+                    }
+                else:
+                    logger.warning(f"pdfplumber не смог извлечь текст из {file_path}")
+                    
+            except Exception as pdfplumber_error:
+                logger.warning(f"Ошибка pdfplumber при обработке {file_path}: {pdfplumber_error}")
             
-            async with aiofiles.open(file_path, 'rb') as file:
-                content = await file.read()
+            # Метод 2: Если pdfplumber не сработал, используем PyPDF2 как fallback
+            try:
+                logger.info(f"Пробуем PyPDF2 для {file_path}")
+                async with aiofiles.open(file_path, 'rb') as file:
+                    content = await file.read()
+                    pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+                    page_count = len(pdf_reader.pages)
+                    
+                    for page_num, page in enumerate(pdf_reader.pages):
+                        page_text = page.extract_text()
+                        if page_text:
+                            text += f"\n--- Страница {page_num + 1} ---\n"
+                            text += page_text
                 
-                # Создаем объект PDF
-                pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
-                
-                # Извлекаем текст из всех страниц
-                for page_num, page in enumerate(pdf_reader.pages):
-                    page_text = page.extract_text()
-                    text += f"\n--- Страница {page_num + 1} ---\n"
-                    text += page_text
-                
-                # TODO: Добавить извлечение таблиц из PDF
-                # Это требует более сложной обработки с использованием библиотек типа pdfplumber
-                
-            return {
-                "text": text.strip(),
-                "tables": tables,
-                "page_count": len(pdf_reader.pages),
-                "extraction_method": "pypdf2"
-            }
+                if text.strip():
+                    extraction_method = "pypdf2"
+                    logger.info(f"Успешно извлечен текст из {file_path} с помощью PyPDF2")
+                    return {
+                        "text": text.strip(),
+                        "tables": tables,
+                        "page_count": page_count,
+                        "extraction_method": extraction_method
+                    }
+                else:
+                    logger.warning(f"PyPDF2 не смог извлечь текст из {file_path}")
+                    
+            except Exception as pypdf2_error:
+                logger.warning(f"Ошибка PyPDF2 при обработке {file_path}: {pypdf2_error}")
+            
+            # Метод 3: Если обычные методы не сработали, используем OCR
+            if OCR_AVAILABLE and not text.strip():
+                try:
+                    logger.info(f"Пробуем OCR для {file_path}")
+                    text = await self._extract_text_with_ocr(file_path)
+                    if text.strip():
+                        extraction_method = "ocr_tesseract"
+                        logger.info(f"Успешно извлечен текст из {file_path} с помощью OCR")
+                        return {
+                            "text": text.strip(),
+                            "tables": tables,
+                            "page_count": page_count,
+                            "extraction_method": extraction_method
+                        }
+                    else:
+                        logger.warning(f"OCR не смог извлечь текст из {file_path}")
+                        
+                except Exception as ocr_error:
+                    logger.warning(f"Ошибка OCR при обработке {file_path}: {ocr_error}")
+            elif not OCR_AVAILABLE:
+                logger.warning("OCR библиотеки недоступны для fallback")
+            
+            # Если все методы не сработали
+            if not text.strip():
+                logger.error(f"Не удалось извлечь текст из {file_path} ни одним из методов")
+                return {
+                    "text": "",
+                    "tables": tables,
+                    "page_count": page_count,
+                    "extraction_method": "failed"
+                }
             
         except Exception as e:
-            logger.error(f"Ошибка при обработке PDF {file_path}: {str(e)}")
+            logger.error(f"Критическая ошибка при обработке PDF {file_path}: {str(e)}")
+            raise
+    
+    async def _extract_text_with_ocr(self, file_path: str) -> str:
+        """Извлекает текст из PDF с помощью OCR (Tesseract)"""
+        if not OCR_AVAILABLE:
+            raise ImportError("OCR библиотеки недоступны")
+        
+        try:
+            # Читаем PDF файл
+            async with aiofiles.open(file_path, 'rb') as file:
+                pdf_content = await file.read()
+            
+            # Конвертируем PDF в изображения
+            images = convert_from_bytes(pdf_content, dpi=300)
+            
+            extracted_text = ""
+            for page_num, image in enumerate(images):
+                try:
+                    # Настраиваем Tesseract для русского и английского языков
+                    custom_config = r'--oem 3 --psm 6 -l rus+eng'
+                    
+                    # Извлекаем текст с изображения
+                    page_text = pytesseract.image_to_string(image, config=custom_config)
+                    
+                    if page_text.strip():
+                        extracted_text += f"\n--- Страница {page_num + 1} (OCR) ---\n"
+                        extracted_text += page_text
+                        
+                except Exception as page_error:
+                    logger.warning(f"Ошибка OCR для страницы {page_num + 1}: {page_error}")
+                    continue
+            
+            return extracted_text
+            
+        except Exception as e:
+            logger.error(f"Ошибка при OCR обработке {file_path}: {str(e)}")
             raise
     
     async def _extract_from_docx(self, file_path: str) -> Dict[str, Any]:

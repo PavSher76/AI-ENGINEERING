@@ -109,8 +109,8 @@ const Chat: React.FC = () => {
   const loadSettings = async () => {
     try {
       const [llmResponse, chatResponse] = await Promise.all([
-        api.get('/chat/settings/llm'),
-        api.get('/chat/settings/chat')
+        api.get('/settings/llm'),
+        api.get('/settings/chat')
       ]);
 
       setLlmSettings(llmResponse.data);
@@ -122,7 +122,7 @@ const Chat: React.FC = () => {
 
   const loadAvailableOptions = async () => {
     try {
-      const response = await api.get('/chat/settings/available');
+      const response = await api.get('/settings/available');
       setAvailableModels(response.data.models || []);
       setAvailableLanguages(response.data.languages || []);
     } catch (err) {
@@ -180,7 +180,7 @@ const Chat: React.FC = () => {
         formData.append('files', file);
       });
 
-      const response = await api.post('/chat/chat', formData, {
+      const response = await api.post('/chat', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -235,7 +235,7 @@ const Chat: React.FC = () => {
 
   const updateLlmSettings = async () => {
     const operation = async () => {
-      await api.put('/chat/settings/llm', llmSettings);
+      await api.put('/settings/llm', llmSettings);
       alert('Настройки LLM обновлены');
     };
 
@@ -248,7 +248,7 @@ const Chat: React.FC = () => {
 
   const updateChatSettings = async () => {
     const operation = async () => {
-      await api.put('/chat/settings/chat', chatSettings);
+      await api.put('/settings/chat', chatSettings);
       alert('Настройки чата обновлены');
     };
 

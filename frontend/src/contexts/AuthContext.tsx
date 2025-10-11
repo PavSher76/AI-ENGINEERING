@@ -23,20 +23,30 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Проверяем, включен ли Keycloak
-  const enableKeycloak = environment.features.enableKeycloak;
-  
-  // Всегда вызываем useKeycloak, но используем результат только если Keycloak включен
-  const keycloakHook = useKeycloak();
-  const { keycloak, initialized } = enableKeycloak ? keycloakHook : { keycloak: null, initialized: true };
+// Компонент для работы с Keycloak
+const KeycloakAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { keycloak, initialized } = useKeycloak();
+  return <AuthProviderInternal keycloak={keycloak} initialized={initialized}>{children}</AuthProviderInternal>;
+};
+
+// Компонент без Keycloak
+const NoAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  return <AuthProviderInternal keycloak={null} initialized={true}>{children}</AuthProviderInternal>;
+};
+
+// Внутренний провайдер авторизации
+const AuthProviderInternal: React.FC<{ 
+  children: ReactNode; 
+  keycloak: any; 
+  initialized: boolean; 
+}> = ({ children, keycloak, initialized }) => {
   
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (initialized) {
-      if (enableKeycloak && keycloak?.authenticated) {
+      if (keycloak?.authenticated) {
         // Извлекаем информацию о пользователе из токена Keycloak
         const userInfo = keycloakUtils.getUserInfo();
         if (userInfo) {
@@ -52,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(userData);
           console.log('Пользователь аутентифицирован через Keycloak:', userData);
         }
-      } else if (!enableKeycloak) {
+      } else if (!keycloak) {
         // Режим без Keycloak - создаем тестового пользователя
         const mockUser: User = {
           id: 'mock-user-1',
@@ -72,15 +82,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       setIsLoading(false);
     }
-  }, [keycloak, initialized, enableKeycloak]);
+  }, [keycloak, initialized]);
 
   const login = () => {
-    if (enableKeycloak && keycloak?.authenticated) {
+    if (keycloak?.authenticated) {
       console.log('Пользователь уже аутентифицирован');
       return;
     }
     
-    if (enableKeycloak) {
+    if (keycloak) {
       keycloakUtils.login();
     } else {
       // В режиме без Keycloak просто устанавливаем тестового пользователя
@@ -99,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    if (enableKeycloak && keycloak?.authenticated) {
+    if (keycloak?.authenticated) {
       keycloakUtils.logout();
     } else {
       // В режиме без Keycloak просто очищаем пользователя
@@ -111,7 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasRole = (role: string): boolean => {
     if (!user) return false;
     
-    if (enableKeycloak && keycloak?.authenticated) {
+    if (keycloak?.authenticated) {
       return keycloakUtils.hasRole(role);
     } else {
       // В режиме без Keycloak проверяем роли из mock пользователя
@@ -122,8 +132,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     
-    if (enableKeycloak && keycloak?.authenticated) {
-      return user.permissions.includes(permission);
+    if (keycloak?.authenticated) {
+      return keycloakUtils.hasPermission(permission);
     } else {
       // В режиме без Keycloak проверяем права из mock пользователя
       return user.permissions.includes(permission);
@@ -133,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasAnyRole = (roles: string[]): boolean => {
     if (!user) return false;
     
-    if (enableKeycloak && keycloak?.authenticated) {
+    if (keycloak?.authenticated) {
       return keycloakUtils.hasAnyRole(roles);
     } else {
       // В режиме без Keycloak проверяем роли из mock пользователя
@@ -144,7 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasAllRoles = (roles: string[]): boolean => {
     if (!user) return false;
     
-    if (enableKeycloak && keycloak?.authenticated) {
+    if (keycloak?.authenticated) {
       return keycloakUtils.hasAllRoles(roles);
     } else {
       // В режиме без Keycloak проверяем роли из mock пользователя
@@ -153,7 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const updateToken = async (): Promise<boolean> => {
-    if (enableKeycloak && keycloak?.authenticated) {
+    if (keycloak?.authenticated) {
       try {
         return await keycloakUtils.updateToken();
       } catch (error) {
@@ -168,7 +178,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: enableKeycloak ? (keycloak?.authenticated || false) : !!user,
+    isAuthenticated: keycloak ? (keycloak?.authenticated || false) : !!user,
     isLoading,
     login,
     logout,
@@ -192,4 +202,15 @@ export const useAuth = (): AuthContextType => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+// Основной экспорт - выбирает нужный провайдер
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const enableKeycloak = environment.features.enableKeycloak;
+  
+  if (enableKeycloak) {
+    return <KeycloakAuthProvider>{children}</KeycloakAuthProvider>;
+  } else {
+    return <NoAuthProvider>{children}</NoAuthProvider>;
+  }
 };
