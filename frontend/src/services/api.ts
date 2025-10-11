@@ -405,6 +405,37 @@ export class OutgoingControlService {
     });
     return response.data;
   }
+
+  // Настройки модуля
+  static async getSettings() {
+    const response = await outgoingControlApi.get('/settings');
+    return response.data;
+  }
+
+  static async updateSettings(settings: any) {
+    const response = await outgoingControlApi.put('/settings', { settings });
+    return response.data;
+  }
+
+  static async validateSettings(settings: any) {
+    const response = await outgoingControlApi.post('/settings/validate', { settings });
+    return response.data;
+  }
+
+  static async resetSettings() {
+    const response = await outgoingControlApi.post('/settings/reset');
+    return response.data;
+  }
+
+  static async getPrompts() {
+    const response = await outgoingControlApi.get('/settings/prompts');
+    return response.data;
+  }
+
+  static async getLLMConfig() {
+    const response = await outgoingControlApi.get('/settings/llm-config');
+    return response.data;
+  }
 }
 
 export default api;

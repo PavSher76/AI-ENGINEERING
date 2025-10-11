@@ -1,0 +1,37 @@
+{
+  "llm_provider": "ollama",
+  "llm_model": "llama3.1:8b",
+  "llm_temperature": 0.5,
+  "llm_max_tokens": 2048,
+  "llm_timeout": 60,
+  "spell_check_prompt": "Проверь орфографию и грамматику в следующем тексте. Найди ошибки и предложи исправления:",
+  "style_analysis_prompt": "Проанализируй стиль следующего текста. Оцени читаемость, формальность и соответствие деловому стилю:",
+  "ethics_check_prompt": "Проверь текст на соответствие этическим нормам и корпоративным стандартам. Найди потенциальные нарушения:",
+  "terminology_check_prompt": "Проверь использование терминологии в тексте. Найди неточности и предложи правильные термины:",
+  "final_review_prompt": "Проведи финальную проверку документа. Оцени готовность к отправке и дай рекомендации:",
+  "default_report_format": "pdf",
+  "include_detailed_analysis": true,
+  "include_suggestions": true,
+  "include_statistics": true,
+  "enabled_checks": [
+    "spell_check",
+    "style_analysis",
+    "ethics_check",
+    "terminology_check"
+  ],
+  "auto_process_on_upload": true,
+  "require_manual_approval": true,
+  "min_confidence_threshold": 0.7,
+  "max_processing_time": 300,
+  "send_notifications": true,
+  "notification_email": null,
+  "enable_api_access": true,
+  "api_rate_limit": 100,
+  "require_authentication": false,
+  "allowed_file_types": [
+    "pdf",
+    "docx",
+    "txt"
+  ],
+  "max_file_size_mb": 50
+}

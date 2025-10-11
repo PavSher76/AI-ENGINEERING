@@ -31,8 +31,8 @@ COPY . .
 # Создание пользователя для безопасности
 RUN useradd --create-home --shell /bin/bash app
 
-# Создание директорий для временных файлов и логов
-RUN mkdir -p /app/temp /app/uploads /app/logs && chown -R app:app /app
+# Создание директорий для временных файлов, логов и данных
+RUN mkdir -p /app/temp /app/uploads /app/logs /app/data && chown -R app:app /app
 USER app
 
 # Экспорт порта

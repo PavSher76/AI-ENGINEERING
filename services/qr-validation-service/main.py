@@ -291,22 +291,24 @@ async def validate_qr_code(request: QRValidateRequest):
 @app.post("/qr/validate-image", response_model=QRValidateResponse)
 async def validate_qr_image(file: UploadFile = File(...)):
     """
-    Валидация QR-кода из изображения
+    Валидация QR-кода из файла (изображение или PDF)
     
-    - **file**: Изображение с QR-кодом
+    - **file**: Файл с QR-кодом (изображение или PDF)
     """
     try:
-        # Читаем изображение
-        image_data = await file.read()
+        # Читаем файл
+        file_data = await file.read()
+        file_type = file.content_type or "application/octet-stream"
         
-        # Извлекаем QR-код из изображения
-        qr_data = qr_service.extract_qr_from_image(image_data)
+        # Извлекаем QR-код из файла
+        qr_data = qr_service.extract_qr_from_file(file_data, file_type)
         
         if not qr_data:
+            file_type_name = "изображении" if file_type.startswith('image/') else "PDF файле"
             return QRValidateResponse(
                 is_valid=False,
                 status="no_qr_found",
-                message="QR-код не найден на изображении",
+                message=f"QR-код не найден в {file_type_name}",
                 document_info=None
             )
         
@@ -319,7 +321,7 @@ async def validate_qr_image(file: UploadFile = File(...)):
         return await validate_qr_code(validation_request)
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка обработки изображения: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка обработки файла: {str(e)}")
 
 @app.get("/qr/document/{document_id}", response_model=QRDocumentResponse)
 async def get_document_info(document_id: str):

@@ -13,9 +13,10 @@ import hmac
 import os
 from datetime import datetime
 from typing import Optional, Dict, Any
-import cv2
-import numpy as np
+# import cv2  # Временно отключено
+# import numpy as np  # Временно отключено
 from pyzbar import pyzbar
+# import fitz  # PyMuPDF для работы с PDF - временно отключено
 
 from models import QRDocument
 from schemas import QRData
@@ -163,9 +164,12 @@ class QRService:
             Данные QR-кода или None
         """
         try:
-            # Конвертируем байты в numpy array
-            nparr = np.frombuffer(image_data, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            # Используем PIL для работы с изображением
+            from PIL import Image
+            import io
+            
+            # Открываем изображение через PIL
+            image = Image.open(io.BytesIO(image_data))
             
             # Ищем QR-коды
             qr_codes = pyzbar.decode(image)
@@ -178,6 +182,44 @@ class QRService:
             
         except Exception as e:
             print(f"Ошибка извлечения QR-кода: {e}")
+            return None
+    
+    def extract_qr_from_pdf(self, pdf_data: bytes) -> Optional[str]:
+        """
+        Извлекает QR-код из PDF файла
+        
+        Args:
+            pdf_data: Байты PDF файла
+            
+        Returns:
+            Данные QR-кода или None
+        """
+        try:
+            # Временно отключено из-за отсутствия PyMuPDF
+            print("Извлечение QR-кода из PDF временно отключено")
+            return None
+            
+        except Exception as e:
+            print(f"Ошибка извлечения QR-кода из PDF: {e}")
+            return None
+    
+    def extract_qr_from_file(self, file_data: bytes, file_type: str) -> Optional[str]:
+        """
+        Извлекает QR-код из файла (изображение или PDF)
+        
+        Args:
+            file_data: Байты файла
+            file_type: MIME тип файла
+            
+        Returns:
+            Данные QR-кода или None
+        """
+        if file_type.startswith('image/'):
+            return self.extract_qr_from_image(file_data)
+        elif file_type == 'application/pdf':
+            return self.extract_qr_from_pdf(file_data)
+        else:
+            print(f"Неподдерживаемый тип файла: {file_type}")
             return None
     
     def validate_qr_signature(self, qr_data: str) -> bool:

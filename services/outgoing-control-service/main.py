@@ -25,6 +25,13 @@ from services.style_analyzer import StyleAnalyzer
 from services.ethics_checker import EthicsChecker
 from services.terminology_checker import TerminologyChecker
 from services.llm_integration import LLMIntegration
+from services.settings_service import OutgoingControlSettingsService
+from settings import (
+    OutgoingControlSettings, 
+    SettingsUpdateRequest, 
+    SettingsResponse,
+    SettingsValidationResponse
+)
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -56,6 +63,7 @@ style_analyzer = StyleAnalyzer()
 ethics_checker = EthicsChecker()
 terminology_checker = TerminologyChecker()
 llm_integration = LLMIntegration()
+settings_service = OutgoingControlSettingsService()
 
 @app.get("/")
 async def root():
@@ -199,6 +207,74 @@ async def upload_document(
             db.refresh(document)
             
             logger.info(f"Загружен файл для документа {document_id}")
+            
+            # Автоматическая обработка если включена
+            settings_service = OutgoingControlSettingsService()
+            settings = settings_service.get_settings()
+            
+            if settings.auto_process_on_upload:
+                logger.info(f"Запуск автоматической обработки для документа {document_id}")
+                try:
+                    # Выполняем все включенные проверки
+                    completed_checks = []
+                    overall_score = 0.0
+                    can_send = True
+                    
+                    for check_type in settings.enabled_checks:
+                        try:
+                            if check_type == "spell_check":
+                                result = await spell_checker.check_spelling(document.extracted_text)
+                                score = result["confidence_score"]
+                                
+                            elif check_type == "style_analysis":
+                                result = await style_analyzer.analyze_style(document.extracted_text, document.document_type)
+                                score = (result["readability_score"] + result["formality_score"] + result["business_style_score"]) / 3
+                                
+                            elif check_type == "ethics_check":
+                                result = await ethics_checker.check_ethics(document.extracted_text)
+                                score = result["ethics_score"]
+                                if not result["is_approved"]:
+                                    can_send = False
+                                    
+                            elif check_type == "terminology_check":
+                                result = await terminology_checker.check_terminology(document.extracted_text, "engineering")
+                                score = result["accuracy_score"]
+                                
+                            else:
+                                continue
+                            
+                            completed_checks.append(check_type)
+                            overall_score += score
+                            
+                        except Exception as e:
+                            logger.warning(f"Ошибка при выполнении проверки {check_type}: {str(e)}")
+                            continue
+                    
+                    # Вычисляем среднюю оценку
+                    if completed_checks:
+                        overall_score = overall_score / len(completed_checks)
+                    
+                    # Обновляем статус документа и сохраняем результаты
+                    if can_send and overall_score >= 70:
+                        document.status = "approved"
+                    elif overall_score >= 50:
+                        document.status = "needs_revision"
+                    else:
+                        document.status = "rejected"
+                    
+                    # Сохраняем результаты обработки
+                    document.overall_score = overall_score
+                    document.can_send = can_send
+                    document.recommendations = "Автоматическая обработка завершена. Проверьте результаты всех проверок для получения детальных рекомендаций."
+                    
+                    db.commit()
+                    
+                    logger.info(f"Автоматическая обработка завершена для документа {document_id}, выполнено проверок: {len(completed_checks)}, общая оценка: {overall_score}")
+                    
+                except Exception as e:
+                    logger.error(f"Ошибка при автоматической обработке документа {document_id}: {str(e)}")
+                    document.status = "processing"
+                    db.commit()
             
             return FileUploadResponse(
                 file_id=str(document_id),
@@ -433,13 +509,18 @@ async def process_document(
         if completed_checks:
             overall_score = overall_score / len(completed_checks)
         
-        # Обновляем статус документа
+        # Обновляем статус документа и сохраняем результаты
         if can_send and overall_score >= 70:
             document.status = "approved"
         elif overall_score >= 50:
             document.status = "needs_revision"
         else:
             document.status = "rejected"
+        
+        # Сохраняем результаты обработки
+        document.overall_score = overall_score
+        document.can_send = can_send
+        document.recommendations = "Проверьте результаты всех проверок для получения детальных рекомендаций"
         
         db.commit()
         
@@ -482,6 +563,77 @@ async def get_service_stats(db: Session = Depends(get_db)):
         
     except Exception as e:
         logger.error(f"Ошибка при получении статистики: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== НАСТРОЙКИ МОДУЛЯ ====================
+
+@app.get("/settings", response_model=SettingsResponse)
+async def get_settings():
+    """Получить настройки модуля выходного контроля"""
+    try:
+        settings = settings_service.get_settings()
+        return SettingsResponse(
+            success=True,
+            settings=settings,
+            message="Настройки успешно получены"
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при получении настроек: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/settings", response_model=SettingsResponse)
+async def update_settings(request: SettingsUpdateRequest):
+    """Обновить настройки модуля выходного контроля"""
+    try:
+        response = settings_service.update_settings(request.settings)
+        if not response.success:
+            raise HTTPException(status_code=400, detail=response.message)
+        return response
+    except Exception as e:
+        logger.error(f"Ошибка при обновлении настроек: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/settings/validate", response_model=SettingsValidationResponse)
+async def validate_settings(request: SettingsUpdateRequest):
+    """Валидировать настройки модуля выходного контроля"""
+    try:
+        return settings_service.validate_settings(request.settings)
+    except Exception as e:
+        logger.error(f"Ошибка при валидации настроек: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/settings/reset", response_model=SettingsResponse)
+async def reset_settings():
+    """Сбросить настройки к значениям по умолчанию"""
+    try:
+        return settings_service.reset_to_defaults()
+    except Exception as e:
+        logger.error(f"Ошибка при сбросе настроек: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/settings/prompts")
+async def get_prompts():
+    """Получить все промпты для проверок"""
+    try:
+        settings = settings_service.get_settings()
+        return {
+            "spell_check_prompt": settings.spell_check_prompt,
+            "style_analysis_prompt": settings.style_analysis_prompt,
+            "ethics_check_prompt": settings.ethics_check_prompt,
+            "terminology_check_prompt": settings.terminology_check_prompt,
+            "final_review_prompt": settings.final_review_prompt
+        }
+    except Exception as e:
+        logger.error(f"Ошибка при получении промптов: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/settings/llm-config")
+async def get_llm_config():
+    """Получить конфигурацию LLM"""
+    try:
+        return settings_service.get_llm_config()
+    except Exception as e:
+        logger.error(f"Ошибка при получении конфигурации LLM: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

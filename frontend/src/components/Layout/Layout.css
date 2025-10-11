@@ -60,5 +60,6 @@
   
   .content-wrapper {
     padding: 1.5rem;
+    max-width: calc(100vw - 280px - 3rem);
   }
 }

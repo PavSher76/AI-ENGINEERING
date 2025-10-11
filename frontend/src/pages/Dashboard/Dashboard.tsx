@@ -23,12 +23,6 @@ const Dashboard: React.FC = () => {
       description: 'Веб-интерфейс системы'
     },
     {
-      name: 'Nginx',
-      url: 'http://localhost:9081',
-      port: 9081,
-      description: 'Reverse proxy и статический сервер'
-    },
-    {
       name: 'Keycloak',
       url: 'https://localhost:9080',
       port: 9080,
@@ -59,12 +53,6 @@ const Dashboard: React.FC = () => {
       description: 'Файловое хранилище'
     },
     {
-      name: 'RabbitMQ',
-      url: 'https://localhost:9568',
-      port: 9568,
-      description: 'Очереди сообщений'
-    },
-    {
       name: 'Ollama Service',
       url: 'http://localhost:9012',
       port: 9012,
@@ -83,46 +71,10 @@ const Dashboard: React.FC = () => {
       description: 'Сервис чата с ИИ'
     },
     {
-      name: 'Consultation Service',
-      url: 'http://localhost:9004',
-      port: 9004,
-      description: 'Консультации по НТД'
-    },
-    {
       name: 'Archive Service',
-      url: 'http://localhost:9005',
-      port: 9005,
+      url: 'http://localhost:9015',
+      port: 9015,
       description: 'Архив и объекты аналоги'
-    },
-    {
-      name: 'Calculation Service',
-      url: 'http://localhost:9006',
-      port: 9006,
-      description: 'Инженерные расчеты'
-    },
-    {
-      name: 'Validation Service',
-      url: 'http://localhost:9007',
-      port: 9007,
-      description: 'Валидация данных'
-    },
-    {
-      name: 'Document Service',
-      url: 'http://localhost:9008',
-      port: 9008,
-      description: 'Управление документами'
-    },
-    {
-      name: 'Analytics Service',
-      url: 'http://localhost:9009',
-      port: 9009,
-      description: 'Аналитика проектов'
-    },
-    {
-      name: 'Integration Service',
-      url: 'http://localhost:9010',
-      port: 9010,
-      description: 'Интеграции с PLM'
     },
     {
       name: 'Outgoing Control Service',
@@ -135,12 +87,6 @@ const Dashboard: React.FC = () => {
       url: 'http://localhost:9013',
       port: 9013,
       description: 'Валидация QR кодов'
-    },
-    {
-      name: 'TechExpert Connector',
-      url: 'http://localhost:9014',
-      port: 9014,
-      description: 'Коннектор TechExpert'
     }
   ];
 
@@ -159,7 +105,7 @@ const Dashboard: React.FC = () => {
           status: 'warning',
           lastCheck: new Date().toLocaleTimeString()
         };
-      } else if (service.name === 'PostgreSQL' || service.name === 'Redis' || service.name === 'Qdrant' || service.name === 'MinIO' || service.name === 'RabbitMQ' || service.name === 'Nginx' || service.name === 'TechExpert Connector') {
+      } else if (service.name === 'PostgreSQL' || service.name === 'Redis' || service.name === 'Qdrant' || service.name === 'MinIO') {
         // Эти сервисы не имеют HTTP endpoints или имеют CORS проблемы, помечаем как unknown
         return {
           ...service,
@@ -193,13 +139,12 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.warn(`Failed to check ${service.name}:`, error);
       
-      // Для сервисов с CORS проблемами или недоступных помечаем как warning
-      if (service.name === 'MinIO' || service.name === 'RabbitMQ' || service.name === 'Qdrant' || 
-          service.name === 'PostgreSQL' || service.name === 'Redis' || service.name === 'Keycloak' ||
-          service.name === 'TechExpert Connector') {
+      // Для сервисов с CORS проблемами или недоступных помечаем как unknown
+      if (service.name === 'MinIO' || service.name === 'Qdrant' || 
+          service.name === 'PostgreSQL' || service.name === 'Redis' || service.name === 'Keycloak') {
         return {
           ...service,
-          status: 'warning',
+          status: 'unknown',
           lastCheck: new Date().toLocaleTimeString()
         };
       }

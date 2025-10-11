@@ -29,6 +29,9 @@ class Document(DocumentBase):
     original_text: Optional[str] = None
     extracted_text: Optional[str] = None
     status: str
+    overall_score: Optional[float] = None
+    can_send: Optional[bool] = None
+    recommendations: Optional[str] = None
     created_by: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime

@@ -24,6 +24,9 @@ class OutgoingDocument(Base):
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"))
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     status = Column(String(50), default="pending")  # 'pending', 'processing', 'approved', 'rejected', 'needs_revision'
+    overall_score = Column(Float)  # Общая оценка документа
+    can_send = Column(Boolean)  # Можно ли отправить документ
+    recommendations = Column(Text)  # Рекомендации по улучшению
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

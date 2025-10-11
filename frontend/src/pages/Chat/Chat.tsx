@@ -40,6 +40,14 @@ interface ChatSettings {
   export_format: string;
 }
 
+interface UserContext {
+  user_preferences: Record<string, any>;
+  conversation_summary: string;
+  key_topics: string[];
+  user_profile: Record<string, any>;
+  last_analysis?: string;
+}
+
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -87,6 +95,13 @@ const Chat: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('llama3.1:8b');
+  const [userContext, setUserContext] = useState<UserContext>({
+    user_preferences: {},
+    conversation_summary: "",
+    key_topics: [],
+    user_profile: {}
+  });
+  const [showContextPanel, setShowContextPanel] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -95,6 +110,7 @@ const Chat: React.FC = () => {
   useEffect(() => {
     loadSettings();
     loadAvailableOptions();
+    loadUserContext();
   }, []);
 
   // Автоскролл к последнему сообщению
@@ -104,6 +120,44 @@ const Chat: React.FC = () => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const loadUserContext = async () => {
+    try {
+      const response = await api.get(`/chat/context/${sessionId}`);
+      if (response.data.success) {
+        setUserContext(response.data.user_context);
+      }
+    } catch (error) {
+      console.warn('Не удалось загрузить контекст пользователя:', error);
+    }
+  };
+
+  const updateUserContext = async (contextUpdates: Partial<UserContext>) => {
+    try {
+      const response = await api.post(`/chat/context/${sessionId}`, contextUpdates);
+      if (response.data.success) {
+        setUserContext(prev => ({ ...prev, ...contextUpdates }));
+      }
+    } catch (error) {
+      console.error('Ошибка обновления контекста:', error);
+    }
+  };
+
+  const analyzeConversation = async () => {
+    try {
+      const response = await api.post(`/chat/context/${sessionId}/analyze`);
+      if (response.data.success) {
+        setUserContext(prev => ({
+          ...prev,
+          conversation_summary: response.data.analysis.summary,
+          key_topics: response.data.analysis.topics,
+          last_analysis: new Date().toISOString()
+        }));
+      }
+    } catch (error) {
+      console.error('Ошибка анализа разговора:', error);
+    }
   };
 
   const loadSettings = async () => {
@@ -211,6 +265,16 @@ const Chat: React.FC = () => {
         setMessages(prev => [...prev, userMessage, aiMessage]);
         setInputMessage('');
         setUploadedFiles([]);
+        
+        // Обновляем контекст пользователя если он есть в ответе
+        if (data.user_context) {
+          setUserContext(data.user_context);
+        }
+        
+        // Автоматически анализируем разговор каждые 5 сообщений
+        if (messages.length > 0 && (messages.length + 2) % 5 === 0) {
+          analyzeConversation();
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Ошибка отправки сообщения');
@@ -304,6 +368,21 @@ const Chat: React.FC = () => {
         <h1>💬 Чат с ИИ</h1>
         <p>Расширенный интерфейс для общения с искусственным интеллектом</p>
         <div className="header-actions">
+          <button 
+            className="btn-context"
+            onClick={() => setShowContextPanel(!showContextPanel)}
+            title="Показать контекст пользователя"
+          >
+            🧠 Контекст
+          </button>
+          <button 
+            className="btn-analyze"
+            onClick={analyzeConversation}
+            disabled={messages.length < 2}
+            title="Анализировать разговор"
+          >
+            🔍 Анализ
+          </button>
           <button 
             className="btn-settings"
             onClick={() => setShowSettings(!showSettings)}
@@ -439,6 +518,87 @@ const Chat: React.FC = () => {
               <button onClick={updateChatSettings} className="btn-save">
                 Сохранить настройки чата
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Панель контекста пользователя */}
+        {showContextPanel && (
+          <div className="context-panel">
+            <div className="context-section">
+              <h3>🧠 Контекст пользователя</h3>
+              
+              <div className="context-item">
+                <label>Резюме разговора:</label>
+                <div className="context-value">
+                  {userContext.conversation_summary || "Пока нет резюме разговора"}
+                </div>
+              </div>
+              
+              <div className="context-item">
+                <label>Ключевые темы:</label>
+                <div className="context-topics">
+                  {userContext.key_topics.length > 0 ? (
+                    userContext.key_topics.map((topic, index) => (
+                      <span key={index} className="topic-tag">{topic}</span>
+                    ))
+                  ) : (
+                    <span className="no-topics">Темы не определены</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="context-item">
+                <label>Предпочтения пользователя:</label>
+                <div className="context-value">
+                  {Object.keys(userContext.user_preferences).length > 0 ? (
+                    <pre>{JSON.stringify(userContext.user_preferences, null, 2)}</pre>
+                  ) : (
+                    "Предпочтения не установлены"
+                  )}
+                </div>
+              </div>
+              
+              <div className="context-item">
+                <label>Профиль пользователя:</label>
+                <div className="context-value">
+                  {Object.keys(userContext.user_profile).length > 0 ? (
+                    <pre>{JSON.stringify(userContext.user_profile, null, 2)}</pre>
+                  ) : (
+                    "Профиль не заполнен"
+                  )}
+                </div>
+              </div>
+              
+              {userContext.last_analysis && (
+                <div className="context-item">
+                  <label>Последний анализ:</label>
+                  <div className="context-value">
+                    {new Date(userContext.last_analysis).toLocaleString('ru-RU')}
+                  </div>
+                </div>
+              )}
+              
+              <div className="context-actions">
+                <button 
+                  className="btn-analyze"
+                  onClick={analyzeConversation}
+                  disabled={messages.length < 2}
+                >
+                  🔍 Анализировать разговор
+                </button>
+                <button 
+                  className="btn-clear-context"
+                  onClick={() => updateUserContext({
+                    user_preferences: {},
+                    conversation_summary: "",
+                    key_topics: [],
+                    user_profile: {}
+                  })}
+                >
+                  🗑️ Очистить контекст
+                </button>
+              </div>
             </div>
           </div>
         )}

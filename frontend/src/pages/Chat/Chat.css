@@ -436,3 +436,129 @@
   border-radius: 4px;
   white-space: nowrap;
 }
+
+/* Стили для панели контекста */
+.btn-context,
+.btn-analyze {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-context {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-context:hover {
+  background: #bfdbfe;
+}
+
+.btn-analyze {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.btn-analyze:hover {
+  background: #fde68a;
+}
+
+.btn-analyze:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.context-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.context-section h3 {
+  margin: 0 0 20px 0;
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.context-item {
+  margin-bottom: 16px;
+}
+
+.context-item label {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.context-value {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 14px;
+  color: #374151;
+  min-height: 40px;
+  word-wrap: break-word;
+}
+
+.context-value pre {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.context-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.topic-tag {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.no-topics {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.context-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-clear-context {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-clear-context:hover {
+  background: #fecaca;
+}

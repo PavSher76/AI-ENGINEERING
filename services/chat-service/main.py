@@ -126,6 +126,72 @@ app.add_middleware(
 # Глобальное хранилище чатов (в production использовать Redis/DB)
 chat_sessions = {}
 
+# Функции для работы с персистентным хранением сессий
+def save_sessions_to_file():
+    """Сохраняет сессии в файл"""
+    try:
+        sessions_file = "/app/data/chat_sessions.json"
+        os.makedirs(os.path.dirname(sessions_file), exist_ok=True)
+        
+        with open(sessions_file, 'w', encoding='utf-8') as f:
+            json.dump(chat_sessions, f, ensure_ascii=False, indent=2)
+        logger.info(f"💾 Сохранено {len(chat_sessions)} сессий в файл")
+    except Exception as e:
+        logger.error(f"❌ Ошибка сохранения сессий: {e}")
+
+def load_sessions_from_file():
+    """Загружает сессии из файла"""
+    try:
+        sessions_file = "/app/data/chat_sessions.json"
+        if os.path.exists(sessions_file):
+            with open(sessions_file, 'r', encoding='utf-8') as f:
+                global chat_sessions
+                chat_sessions = json.load(f)
+            logger.info(f"📂 Загружено {len(chat_sessions)} сессий из файла")
+        else:
+            logger.info("📂 Файл сессий не найден, начинаем с пустого состояния")
+    except Exception as e:
+        logger.error(f"❌ Ошибка загрузки сессий: {e}")
+        chat_sessions = {}
+
+def get_user_context(session_id: str) -> Dict[str, Any]:
+    """Получает контекст пользователя для сессии"""
+    if session_id not in chat_sessions:
+        return {
+            "user_preferences": {},
+            "conversation_summary": "",
+            "key_topics": [],
+            "user_profile": {}
+        }
+    
+    session = chat_sessions[session_id]
+    return session.get("user_context", {
+        "user_preferences": {},
+        "conversation_summary": "",
+        "key_topics": [],
+        "user_profile": {}
+    })
+
+def update_user_context(session_id: str, context_updates: Dict[str, Any]):
+    """Обновляет контекст пользователя"""
+    if session_id not in chat_sessions:
+        chat_sessions[session_id] = {
+            "messages": [],
+            "files": [],
+            "created_at": datetime.now().isoformat(),
+            "user_context": {}
+        }
+    
+    session = chat_sessions[session_id]
+    if "user_context" not in session:
+        session["user_context"] = {}
+    
+    session["user_context"].update(context_updates)
+    save_sessions_to_file()
+
+# Загружаем сессии при старте приложения
+load_sessions_from_file()
+
 @app.get("/")
 async def root():
     logger.info("🏠 Запрос к корневому эндпоинту")
@@ -530,12 +596,16 @@ async def chat_with_ai(
         }
         session["messages"].append(ai_message)
         
+        # Сохраняем сессию
+        save_sessions_to_file()
+        
         return {
             "success": True,
             "response": ai_response,
             "session_id": session_id,
             "files_processed": len(processed_files),
-            "message_count": len(session["messages"])
+            "message_count": len(session["messages"]),
+            "user_context": get_user_context(session_id)
         }
         
     except HTTPException as he:
@@ -640,6 +710,101 @@ async def get_chat_sessions():
         "total_sessions": len(chat_sessions)
     }
 
+@app.get("/chat/context/{session_id}")
+async def get_user_context_endpoint(session_id: str):
+    """Получить контекст пользователя для сессии"""
+    try:
+        context = get_user_context(session_id)
+        return {
+            "success": True,
+            "session_id": session_id,
+            "user_context": context
+        }
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения контекста: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка получения контекста: {str(e)}")
+
+@app.post("/chat/context/{session_id}")
+async def update_user_context_endpoint(
+    session_id: str,
+    context_data: Dict[str, Any]
+):
+    """Обновить контекст пользователя для сессии"""
+    try:
+        update_user_context(session_id, context_data)
+        return {
+            "success": True,
+            "session_id": session_id,
+            "message": "Контекст пользователя обновлен"
+        }
+    except Exception as e:
+        logger.error(f"❌ Ошибка обновления контекста: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка обновления контекста: {str(e)}")
+
+@app.post("/chat/context/{session_id}/analyze")
+async def analyze_conversation_context(session_id: str):
+    """Анализирует разговор и обновляет контекст пользователя"""
+    try:
+        if session_id not in chat_sessions:
+            raise HTTPException(status_code=404, detail="Сессия не найдена")
+        
+        session = chat_sessions[session_id]
+        messages = session.get("messages", [])
+        
+        if len(messages) < 2:
+            return {
+                "success": True,
+                "message": "Недостаточно сообщений для анализа"
+            }
+        
+        # Простой анализ контекста (в реальном проекте можно использовать LLM)
+        user_messages = [msg for msg in messages if msg["role"] == "user"]
+        topics = []
+        preferences = {}
+        
+        # Извлекаем ключевые темы из сообщений пользователя
+        for msg in user_messages:
+            content = msg["content"].lower()
+            if "расчет" in content or "вычислить" in content:
+                topics.append("инженерные расчеты")
+            if "документ" in content or "файл" in content:
+                topics.append("работа с документами")
+            if "проект" in content:
+                topics.append("управление проектами")
+            if "помощь" in content or "объясни" in content:
+                topics.append("консультации")
+        
+        # Убираем дубликаты
+        topics = list(set(topics))
+        
+        # Создаем резюме разговора
+        conversation_summary = f"Обсуждено {len(messages)} сообщений. Основные темы: {', '.join(topics) if topics else 'общие вопросы'}"
+        
+        # Обновляем контекст
+        context_updates = {
+            "conversation_summary": conversation_summary,
+            "key_topics": topics,
+            "last_analysis": datetime.now().isoformat()
+        }
+        
+        update_user_context(session_id, context_updates)
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "analysis": {
+                "topics": topics,
+                "summary": conversation_summary,
+                "message_count": len(messages)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Ошибка анализа контекста: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка анализа контекста: {str(e)}")
+
 @app.get("/chat/sessions/{session_id}")
 async def get_chat_session(session_id: str):
     """Получить конкретную сессию чата"""
@@ -732,14 +897,41 @@ async def export_to_pdf(
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 
 def _build_llm_context(session: Dict[str, Any], llm_settings: Dict[str, Any]) -> str:
-    """Строит контекст для LLM"""
+    """Строит контекст для LLM с учетом пользовательского контекста"""
     context = ""
     
     # Добавляем системный промпт
     if llm_settings.get("system_prompt"):
         context += f"Система: {llm_settings['system_prompt']}\n\n"
     
+    # Добавляем контекст пользователя
+    user_context = session.get("user_context", {})
+    if user_context:
+        context += "=== КОНТЕКСТ ПОЛЬЗОВАТЕЛЯ ===\n"
+        
+        # Предпочтения пользователя
+        if user_context.get("user_preferences"):
+            prefs = user_context["user_preferences"]
+            context += f"Предпочтения пользователя: {prefs}\n"
+        
+        # Резюме предыдущих разговоров
+        if user_context.get("conversation_summary"):
+            context += f"Резюме предыдущих разговоров: {user_context['conversation_summary']}\n"
+        
+        # Ключевые темы
+        if user_context.get("key_topics"):
+            topics = ", ".join(user_context["key_topics"])
+            context += f"Ключевые темы обсуждения: {topics}\n"
+        
+        # Профиль пользователя
+        if user_context.get("user_profile"):
+            profile = user_context["user_profile"]
+            context += f"Профиль пользователя: {profile}\n"
+        
+        context += "\n"
+    
     # Добавляем историю сообщений
+    context += "=== ИСТОРИЯ СООБЩЕНИЙ ===\n"
     for message in session["messages"][-10:]:  # Последние 10 сообщений
         role = "Пользователь" if message["role"] == "user" else "ИИ"
         context += f"{role}: {message['content']}\n"

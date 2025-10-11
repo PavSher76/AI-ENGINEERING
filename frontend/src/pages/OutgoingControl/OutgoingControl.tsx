@@ -302,6 +302,21 @@ const OutgoingControl: React.FC = () => {
     }
   };
 
+  const handleProcessDocumentFromDetails = (documentId: string) => {
+    const document = documents.find(doc => doc.id === documentId);
+    if (document) {
+      setSelectedDocument(document);
+      setProcessingDialogOpen(true);
+    }
+  };
+
+  const handleDownloadReportFromDetails = (documentId: string) => {
+    const document = documents.find(doc => doc.id === documentId);
+    if (document) {
+      handleGenerateReport(document);
+    }
+  };
+
   const generateDocumentReport = (document: any) => {
     const report = {
       title: `Отчет о проверке документа: ${document.title}`,
@@ -593,7 +608,7 @@ ${report.extractedText}
       <TabPanel value={activeTab} index={0}>
         <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ width: '100%' }}>
           {/* Загрузка документов */}
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <DocumentUpload
@@ -607,7 +622,7 @@ ${report.extractedText}
           </Grid>
 
           {/* Список документов */}
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -628,38 +643,60 @@ ${report.extractedText}
                     Нет документов для обработки
                   </Typography>
                 ) : (
-                  <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                  <Grid container spacing={2}>
                     {documents.map((doc) => (
-                      <Card 
-                        key={doc.id} 
-                        sx={{ 
-                          mb: 2, 
-                          cursor: 'pointer',
-                          border: selectedDocument?.id === doc.id ? 2 : 1,
-                          borderColor: selectedDocument?.id === doc.id ? 'primary.main' : 'divider'
-                        }}
-                               onClick={() => {
-                                 setSelectedDocument(doc);
-                                 setActiveTab(2); // Переключаемся на вкладку деталей
-                               }}
-                      >
-                        <CardContent sx={{ py: 2 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <Box sx={{ flexGrow: 1 }}>
-                              <Typography variant="subtitle1" gutterBottom>
+                      <Grid item xs={12} sm={6} md={4} lg={3} key={doc.id}>
+                        <Card 
+                          sx={{ 
+                            height: '100%',
+                            cursor: 'pointer',
+                            border: selectedDocument?.id === doc.id ? 2 : 1,
+                            borderColor: selectedDocument?.id === doc.id ? 'primary.main' : 'divider',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            transition: 'all 0.2s ease-in-out',
+                            '&:hover': {
+                              boxShadow: 3,
+                              transform: 'translateY(-2px)'
+                            }
+                          }}
+                          onClick={() => {
+                            setSelectedDocument(doc);
+                            setActiveTab(2); // Переключаемся на вкладку деталей
+                          }}
+                        >
+                          <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography 
+                                variant="subtitle1" 
+                                gutterBottom
+                                sx={{ 
+                                  fontWeight: 600,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  lineHeight: 1.3,
+                                  minHeight: '2.6em'
+                                }}
+                              >
                                 {doc.title}
                               </Typography>
                               <Chip 
                                 label={getStatusLabel(doc.status)} 
                                 color={getStatusColor(doc.status) as any}
                                 size="small"
-                                sx={{ mr: 1 }}
+                                sx={{ mb: 1 }}
                               />
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color="text.secondary" display="block">
                                 {new Date(doc.created_at).toLocaleDateString()}
                               </Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
+                          </CardContent>
+                          
+                          <Box sx={{ p: 2, pt: 0 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                               {(doc.status === 'uploaded' || doc.status === 'pending') && (
                                 <Button
                                   size="small"
@@ -669,6 +706,8 @@ ${report.extractedText}
                                     setSelectedDocument(doc);
                                     setProcessingDialogOpen(true);
                                   }}
+                                  fullWidth
+                                  variant="contained"
                                 >
                                   Обработать
                                 </Button>
@@ -683,6 +722,8 @@ ${report.extractedText}
                                     setProcessingDialogOpen(true);
                                   }}
                                   disabled
+                                  fullWidth
+                                  variant="outlined"
                                 >
                                   Обрабатывается...
                                 </Button>
@@ -696,6 +737,9 @@ ${report.extractedText}
                                     setSelectedDocument(doc);
                                     setReviewDialogOpen(true);
                                   }}
+                                  fullWidth
+                                  variant="contained"
+                                  color="success"
                                 >
                                   Обзор
                                 </Button>
@@ -709,6 +753,8 @@ ${report.extractedText}
                                     handleGenerateReport(doc);
                                   }}
                                   color="primary"
+                                  fullWidth
+                                  variant="outlined"
                                 >
                                   Отчет
                                 </Button>
@@ -721,15 +767,17 @@ ${report.extractedText}
                                   handleDeleteDocument(doc.id);
                                 }}
                                 color="error"
+                                fullWidth
+                                variant="outlined"
                               >
                                 Удалить
                               </Button>
                             </Box>
                           </Box>
-                        </CardContent>
-                      </Card>
+                        </Card>
+                      </Grid>
                     ))}
-                  </Box>
+                  </Grid>
                 )}
               </CardContent>
             </Card>
@@ -789,6 +837,8 @@ ${report.extractedText}
                    document={selectedDocument} 
                    onRerunChecks={handleRerunChecks}
                    onDelete={handleDeleteDocument}
+                   onProcess={handleProcessDocumentFromDetails}
+                   onDownloadReport={handleDownloadReportFromDetails}
                    isProcessing={isProcessing}
                  />
                </TabPanel>

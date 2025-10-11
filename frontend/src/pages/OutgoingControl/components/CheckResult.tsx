@@ -118,9 +118,9 @@ const CheckResult: React.FC<CheckResultProps> = ({ title, result, onRunCheck }) 
             Статистика проверки:
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-            <Chip label={`Всего слов: ${details.total_words}`} size="small" />
-            <Chip label={`Ошибок найдено: ${details.errors_found}`} size="small" color={details.errors_found > 0 ? 'error' : 'success'} />
-            <Chip label={`Уверенность: ${(details.confidence_score * 100).toFixed(1)}%`} size="small" />
+            <Chip label={`Всего слов: ${details.total_words || 0}`} size="small" />
+            <Chip label={`Ошибок найдено: ${details.errors_found || 0}`} size="small" color={(details.errors_found || 0) > 0 ? 'error' : 'success'} />
+            <Chip label={`Уверенность: ${details.confidence_score ? (details.confidence_score * 100).toFixed(1) : 'N/A'}%`} size="small" />
           </Box>
         </Box>
         
@@ -178,9 +178,9 @@ const CheckResult: React.FC<CheckResultProps> = ({ title, result, onRunCheck }) 
             Оценки стиля:
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-            <Chip label={`Читаемость: ${details.readability_score.toFixed(1)}`} size="small" />
-            <Chip label={`Формальность: ${details.formality_score.toFixed(1)}`} size="small" />
-            <Chip label={`Деловой стиль: ${details.business_style_score.toFixed(1)}`} size="small" />
+            <Chip label={`Читаемость: ${details.readability_score?.toFixed(1) || 'N/A'}`} size="small" />
+            <Chip label={`Формальность: ${details.formality_score?.toFixed(1) || 'N/A'}`} size="small" />
+            <Chip label={`Деловой стиль: ${details.business_style_score?.toFixed(1) || 'N/A'}`} size="small" />
           </Box>
         </Box>
         
@@ -190,8 +190,8 @@ const CheckResult: React.FC<CheckResultProps> = ({ title, result, onRunCheck }) 
               Анализ тона:
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip label={`Тон: ${details.tone_analysis.tone}`} size="small" />
-              <Chip label={`Уверенность: ${(details.tone_analysis.confidence * 100).toFixed(1)}%`} size="small" />
+              <Chip label={`Тон: ${details.tone_analysis?.tone || 'N/A'}`} size="small" />
+              <Chip label={`Уверенность: ${details.tone_analysis?.confidence ? (details.tone_analysis.confidence * 100).toFixed(1) : 'N/A'}%`} size="small" />
             </Box>
           </Box>
         )}
@@ -221,9 +221,9 @@ const CheckResult: React.FC<CheckResultProps> = ({ title, result, onRunCheck }) 
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
             <Chip 
-              label={`Оценка этики: ${details.ethics_score.toFixed(1)}`} 
+              label={`Оценка этики: ${details.ethics_score?.toFixed(1) || 'N/A'}`} 
               size="small" 
-              color={details.ethics_score >= 80 ? 'success' : details.ethics_score >= 60 ? 'warning' : 'error'}
+              color={details.ethics_score && details.ethics_score >= 80 ? 'success' : details.ethics_score && details.ethics_score >= 60 ? 'warning' : 'error'}
             />
             <Chip 
               label={details.is_approved ? 'Одобрено' : 'Требует доработки'} 
@@ -289,8 +289,8 @@ const CheckResult: React.FC<CheckResultProps> = ({ title, result, onRunCheck }) 
             Результат проверки терминологии:
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-            <Chip label={`Точность: ${(details.accuracy_score * 100).toFixed(1)}%`} size="small" />
-            <Chip label={`Терминов найдено: ${details.terms_used.length}`} size="small" />
+            <Chip label={`Точность: ${details.accuracy_score ? (details.accuracy_score * 100).toFixed(1) : 'N/A'}%`} size="small" />
+            <Chip label={`Терминов найдено: ${details.terms_used?.length || 0}`} size="small" />
           </Box>
         </Box>
         
@@ -337,7 +337,7 @@ const CheckResult: React.FC<CheckResultProps> = ({ title, result, onRunCheck }) 
                   </ListItemIcon>
                   <ListItemText
                     primary={`"${suggestion.term}" → "${suggestion.suggestion}"`}
-                    secondary={`Уверенность: ${(suggestion.confidence * 100).toFixed(1)}%`}
+                    secondary={`Уверенность: ${suggestion.confidence ? (suggestion.confidence * 100).toFixed(1) : 'N/A'}%`}
                   />
                 </ListItem>
               ))}

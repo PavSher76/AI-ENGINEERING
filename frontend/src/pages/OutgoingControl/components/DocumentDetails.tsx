@@ -30,7 +30,9 @@ import {
   Info,
   Refresh,
   Delete,
-  PlayArrow
+  PlayArrow,
+  GetApp,
+  Settings
 } from '@mui/icons-material';
 import { Document } from '../types';
 
@@ -38,6 +40,8 @@ interface DocumentDetailsProps {
   document: Document;
   onRerunChecks?: (documentId: string) => void;
   onDelete?: (documentId: string) => void;
+  onProcess?: (documentId: string) => void;
+  onDownloadReport?: (documentId: string) => void;
   isProcessing?: boolean;
 }
 
@@ -45,6 +49,8 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
   document, 
   onRerunChecks, 
   onDelete, 
+  onProcess,
+  onDownloadReport,
   isProcessing = false 
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -68,6 +74,18 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
+  };
+
+  const handleProcess = () => {
+    if (onProcess) {
+      onProcess(document.id);
+    }
+  };
+
+  const handleDownloadReport = () => {
+    if (onDownloadReport) {
+      onDownloadReport(document.id);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -113,12 +131,28 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
         
         <ButtonGroup variant="outlined" size="small">
           <Button
-            startIcon={<Refresh />}
-            onClick={handleRerunChecks}
+            startIcon={<Settings />}
+            onClick={handleProcess}
             disabled={isProcessing || document.status === 'processing'}
             color="primary"
           >
+            Обработать
+          </Button>
+          <Button
+            startIcon={<Refresh />}
+            onClick={handleRerunChecks}
+            disabled={isProcessing || document.status === 'processing'}
+            color="secondary"
+          >
             Повторная проверка
+          </Button>
+          <Button
+            startIcon={<GetApp />}
+            onClick={handleDownloadReport}
+            disabled={isProcessing || !document.checks}
+            color="info"
+          >
+            Скачать отчет
           </Button>
           <Button
             startIcon={<Delete />}
@@ -126,7 +160,7 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
             disabled={isProcessing}
             color="error"
           >
-            Удалить
+            Удалить документ
           </Button>
         </ButtonGroup>
       </Box>
